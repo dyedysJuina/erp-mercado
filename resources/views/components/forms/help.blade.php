@@ -1,0 +1,1 @@
+<p class="mt-1 text-xs" style="color: var(--muted);">{{ $slot }}</p>
