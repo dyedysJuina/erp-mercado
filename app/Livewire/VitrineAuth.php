@@ -86,7 +86,7 @@ class VitrineAuth extends Component
             'cliente_nome' => $cliente->nome,
         ]);
 
-        return $this->redirect('/vitrine');
+        return $this->redirect('/vitrine', navigate: true);
     }
 
     public function registrar()
