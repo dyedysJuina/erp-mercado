@@ -90,19 +90,9 @@
                     <label style="display:block;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:0.35rem;">WhatsApp</label>
                     <div style="position:relative;">
                         <i class="fas fa-phone" style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none;z-index:1;"></i>
-                        <input wire:model.blur="reg_whatsapp" type="tel" required placeholder="(66) 99999-9999"
+                        <input wire:model.live="reg_whatsapp" type="tel" required placeholder="WhatsApp com DDD"
                             style="width:100%;padding:0.8rem 1rem 0.8rem 2.8rem;font-size:0.95rem;border:1.5px solid var(--border);border-radius:60px;background:var(--surface);color:var(--text);outline:none;transition:all 0.2s;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;"
-                            onfocus="this.style.borderColor='var(--primary-500)'" onblur="this.style.borderColor='var(--border)'"
-                            x-data
-                            x-init="$el.addEventListener('input', function(e) {
-                                let v = e.target.value.replace(/\D/g, '').substring(0, 11);
-                                let masked = '';
-                                if (v.length <= 2) { masked = v; }
-                                else if (v.length <= 6) { masked = '(' + v.substring(0,2) + ') ' + v.substring(2); }
-                                else if (v.length <= 10) { masked = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7); }
-                                else { masked = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7,11); }
-                                if (e.target.value !== masked) setTimeout(() => { e.target.value = masked; }, 0);
-                            })">
+                            onfocus="this.style.borderColor='var(--primary-500)'" onblur="this.style.borderColor='var(--border)'">
                     </div>
                     @error('reg_whatsapp') <p style="margin:0.2rem 0 0;font-size:0.78rem;font-weight:600;color:var(--danger);padding-left:0.5rem;">{{ $message }}</p> @enderror
                 </div>

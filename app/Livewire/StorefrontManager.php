@@ -59,7 +59,7 @@ class StorefrontManager extends Component
             $q->where('produto_variacoes.nome_completo', 'like', '%' . $this->busca . '%');
         }
 
-        return $q->limit(30)->get([
+        return $q->limit(100)->get([
             'produto_variacoes.id',
             'produto_variacoes.nome_completo',
             'price.preco_venda',
@@ -107,6 +107,10 @@ class StorefrontManager extends Component
             if (!$preco || $preco <= 0) continue;
 
             $qtd = max(0.001, (float)$item['quantidade']);
+            $min = max(0.001, (float)$v->quantidade_minima_venda);
+            $step = max(0.001, (float)$v->passo_venda);
+            if ($qtd < $min) $qtd = $min;
+            if ($step > 0 && abs(($qtd / $step) - round($qtd / $step)) > 0.0001) $qtd = $step;
             $totalItem = $qtd * (float)$preco;
             $total += $totalItem;
 

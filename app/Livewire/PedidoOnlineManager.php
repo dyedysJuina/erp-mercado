@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\ProdutoVariacao;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +15,7 @@ class PedidoOnlineManager extends Component
 {
     use WithPagination;
 
+    #[Url(as: 'q')]
     public string $busca = '';
     public string $filtroStatus = '';
     public string $filtroEntrega = '';
