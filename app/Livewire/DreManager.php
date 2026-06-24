@@ -44,10 +44,11 @@ class DreManager extends Component
         if ($this->lojaFiltro) $vendasQ->where('loja_id', (int)$this->lojaFiltro);
         $receitaBruta = (float)$vendasQ->sum('total');
 
-        // Receitas financeiras
+        // Receitas financeiras (exclui PDV que já está em receitaBruta)
         $recFinQ = DB::table('financeiro_lancamentos')
             ->where('tipo', 'receita')
             ->where('status', 'pago')
+            ->whereNull('pdv_venda_id')
             ->whereBetween('data_pagamento', [$inicio, $fim]);
         if ($this->lojaFiltro) $recFinQ->where('loja_id', (int)$this->lojaFiltro);
         $receitasFinanceiras = (float)$recFinQ->sum('valor');

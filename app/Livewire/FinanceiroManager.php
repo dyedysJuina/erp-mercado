@@ -207,14 +207,19 @@ class FinanceiroManager extends Component
         $valor = (float)str_replace(['.', ','], ['', '.'], $this->valor);
 
         $data = [
+            'empresa_id' => auth()->user()->empresa_id ?? 1,
+            'loja_id' => auth()->user()->loja_id,
             'tipo' => $this->tipo,
             'descricao' => $this->descricao,
             'valor' => $valor,
+            'data_competencia' => $this->data_competencia ?: $this->data_vencimento,
             'data_vencimento' => $this->data_vencimento,
             'data_pagamento' => $this->status === 'pago' ? ($this->data_pagamento ?: now()->format('Y-m-d')) : null,
             'status' => $this->status,
             'categoria_id' => $this->categoria_id ? (int)$this->categoria_id : null,
+            'centro_custo_id' => $this->centro_custo_id ? (int)$this->centro_custo_id : null,
             'conta_id' => $this->conta_id ? (int)$this->conta_id : null,
+            'usuario_id' => auth()->id(),
         ];
 
         if ($this->editandoId) {

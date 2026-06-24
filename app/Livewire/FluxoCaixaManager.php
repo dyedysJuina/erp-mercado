@@ -39,12 +39,6 @@ class FluxoCaixaManager extends Component
             ->sum('valor');
         $saldoAtual = $receitasPagas - $despesasPagas;
 
-        // Vendas PDV concluídas (todas são receitas já realizadas)
-        $vendasPDV = (float) DB::table('pdv_vendas')->where('status', 'concluida')
-            ->when($this->lojaFiltro, fn($q) => $q->where('loja_id', (int)$this->lojaFiltro))
-            ->sum('total');
-        $saldoReal = $saldoAtual + $vendasPDV;
-
         // A receber (pendentes)
         $aReceber = (float) DB::table('financeiro_lancamentos')
             ->where('tipo', 'receita')->whereIn('status', ['pendente', 'atrasado'])
@@ -96,8 +90,7 @@ class FluxoCaixaManager extends Component
 
         return [
             'saldo_atual' => $saldoAtual,
-            'vendas_pdv' => $vendasPDV,
-            'saldo_real' => $saldoReal,
+            'saldo_real' => $saldoAtual,
             'a_receber' => $aReceber,
             'a_pagar' => $aPagar,
             'saldo_projetado_final' => $saldoProjetado,

@@ -734,6 +734,7 @@ class VendaManager extends Component
             $dev->update(['valor_total' => $totalDevolvido]);
 
             \App\Models\FinanceiroLancamento::create([
+                'empresa_id' => auth()->user()->empresa_id ?? 1,
                 'loja_id' => (int)$venda->loja_id,
                 'tipo' => 'receita',
                 'descricao' => 'Devolução venda #' . $venda->id,
@@ -813,7 +814,7 @@ class VendaManager extends Component
                 ->update(['cancelado_at' => now()]);
 
             \App\Models\FinanceiroLancamento::where('pdv_venda_id', $venda->id)
-                ->update(['status' => 'cancelado']);
+                ->update(['status' => 'cancelado', 'data_pagamento' => null]);
         });
 
         $this->estornoModalOpen = false;
