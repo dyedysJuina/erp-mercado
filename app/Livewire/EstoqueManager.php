@@ -15,7 +15,12 @@ use Livewire\WithPagination;
 class EstoqueManager extends Component
 {
     use WithPagination;
-    public string $loja_id = '2';
+    public string $loja_id = '';
+
+    public function mount(): void
+    {
+        $this->loja_id = (string)(auth()->user()->loja_id ?? '');
+    }
     public string $busca = '';
     public string $buscaVariacao = '';
     public string $filtroStatus = 'todos';
@@ -38,6 +43,7 @@ class EstoqueManager extends Component
             'movVariacaoId' => ['required', 'exists:produto_variacoes,id'],
             'movTipo' => ['required'],
             'movQuantidade' => ['required', 'numeric', 'min:0'],
+            'movCusto' => ['nullable', 'numeric', 'min:0'],
             'movJustificativa' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -84,7 +90,7 @@ class EstoqueManager extends Component
                 'estoque_saldos.*',
                 'produto_variacoes.nome_completo',
                 'produto_variacoes.sku',
-                'produto_variacoes.ncm_id',
+                'produto_variacoes.ncm',
                 'marcas.nome as marca_nome',
                 'unidades_medida.sigla as unid_sigla',
                 'categorias.nome as cat_nome',
@@ -104,6 +110,13 @@ class EstoqueManager extends Component
               ->whereColumn('estoque_saldos.quantidade_atual', '<=', 'estoque_saldos.estoque_minimo');
         } elseif ($this->filtroStatus === 'zerado') {
             $q->where('estoque_saldos.quantidade_atual', '<=', 0);
+        } elseif ($this->filtroStatus === 'normal') {
+            $q->where('estoque_saldos.quantidade_atual', '>', 0)
+              ->where(function ($w) {
+                  $w->whereColumn('estoque_saldos.quantidade_atual', '>', 'estoque_saldos.estoque_minimo')
+                     ->orWhereNull('estoque_saldos.estoque_minimo')
+                     ->orWhere('estoque_saldos.estoque_minimo', '<=', 0);
+              });
         }
 
         $result = $q->get()->toArray();
@@ -114,11 +127,7 @@ class EstoqueManager extends Component
                 ->where('produto_variacao_id', $item['produto_variacao_id'])
                 ->where('principal', true)->value('codigo') ?? '—';
 
-            $item['ncm_codigo'] = '—';
-            if ($item['ncm_id']) {
-                $n = Ncm::find($item['ncm_id']);
-                $item['ncm_codigo'] = $n?->codigo ?? '—';
-            }
+            $item['ncm_codigo'] = $item['ncm'] ?? '—';
         }
 
         return $result;
@@ -144,7 +153,7 @@ class EstoqueManager extends Component
                 'estoque_saldos.*',
                 'produto_variacoes.nome_completo',
                 'produto_variacoes.sku',
-                'produto_variacoes.ncm_id',
+                'produto_variacoes.ncm',
                 'marcas.nome as marca_nome',
                 'unidades_medida.sigla as unid_sigla',
                 'categorias.nome as cat_nome',
@@ -171,11 +180,7 @@ class EstoqueManager extends Component
                 ->where('produto_variacao_id', $item->produto_variacao_id)
                 ->where('principal', true)->value('codigo') ?? '—';
 
-            $item->ncm_codigo = '—';
-            if ($item->ncm_id) {
-                $n = Ncm::find($item->ncm_id);
-                $item->ncm_codigo = $n?->codigo ?? '—';
-            }
+            $item->ncm_codigo = $item->ncm ?? '—';
             return $item;
         });
     }
@@ -303,6 +308,7 @@ class EstoqueManager extends Component
 
         $this->modalOpen = false;
         $this->toast('Movimentação registrada com sucesso!');
+        $this->forgetComputed('saldos');
         $this->resetErrorBag();
     }
 

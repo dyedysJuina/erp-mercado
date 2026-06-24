@@ -18,25 +18,40 @@ class LoteManager extends Component
     public string $filtroStatus = 'todos';
     public string $dataInicio = '';
     public string $dataFim = '';
+    public string $filtroLoja = '';
 
     #[Computed]
-    public function totalLotes(): int { return EstoqueLote::count(); }
+    public function lojas(): array
+    {
+        return \App\Models\Loja::orderBy('nome')->get(['id', 'nome'])->toArray();
+    }
+
+    #[Computed]
+    public function totalLotes(): int
+    {
+        return EstoqueLote::when($this->filtroLoja, fn($q) => $q->where('loja_id', (int)$this->filtroLoja))->count();
+    }
 
     #[Computed]
     public function expirando30dias(): int
     {
-        return EstoqueLote::whereBetween('data_validade', [now(), now()->addDays(30)])->count();
+        return EstoqueLote::whereBetween('data_validade', [now(), now()->addDays(30)])
+            ->when($this->filtroLoja, fn($q) => $q->where('loja_id', (int)$this->filtroLoja))
+            ->count();
     }
 
     #[Computed]
     public function vencidos(): int
     {
-        return EstoqueLote::where('data_validade', '<', now())->count();
+        return EstoqueLote::where('data_validade', '<', now())
+            ->when($this->filtroLoja, fn($q) => $q->where('loja_id', (int)$this->filtroLoja))
+            ->count();
     }
 
     public function lotes()
     {
         $q = EstoqueLote::with('variacao.unidadeMedida')
+            ->when($this->filtroLoja, fn($q) => $q->where('loja_id', (int)$this->filtroLoja))
             ->orderBy('data_validade');
 
         if (strlen(trim($this->busca)) >= 2) {

@@ -37,6 +37,7 @@ class MargemDepartamentoManager extends Component
                   ->whereExists(function ($sub) {
                       $sub->select(DB::raw(1))
                           ->from('lojas')
+                          ->whereColumn('lojas.id', 'pdv_vendas.loja_id')
                           ->whereColumn('lojas.tabela_preco_id', 'tabela_precos_itens.tabela_preco_id');
                   });
             })

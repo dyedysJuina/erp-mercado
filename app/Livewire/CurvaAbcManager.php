@@ -23,6 +23,11 @@ class CurvaAbcManager extends Component
 
     private ?array $cacheAnalise = null;
 
+    public function updatedLojaFiltro(): void { $this->cacheAnalise = null; $this->resetPage(); }
+    public function updatedCategoriaFiltro(): void { $this->cacheAnalise = null; $this->resetPage(); }
+    public function updatedPeriodo(): void { $this->cacheAnalise = null; $this->resetPage(); }
+    public function updatedClasseFiltro(): void { $this->cacheAnalise = null; $this->resetPage(); }
+
     #[Computed]
     public function lojas(): array
     {

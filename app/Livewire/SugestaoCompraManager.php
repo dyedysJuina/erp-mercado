@@ -85,6 +85,7 @@ class SugestaoCompraManager extends Component
                 'produto_variacoes.id',
                 'produto_variacoes.nome_completo',
                 'produto_variacoes.sku',
+                'categorias.id as categoria_id',
                 'categorias.nome as categoria',
                 'tabela_precos_itens.preco_custo'
             )
@@ -97,7 +98,7 @@ class SugestaoCompraManager extends Component
             if (!$prod) continue;
 
             $est = $estoques->get($variacaoId);
-            $estoqueAtual = (float)($est->quantidade_atual ?? 0);
+            $estoqueAtual = (float)($est->quantidade_atual ?? 0) - (float)($est->quantidade_reservada ?? 0);
             $estoqueMin = (float)($est->estoque_minimo ?? 0);
             $vendaMediaDiaria = $qtdTotal / $dias;
 
@@ -110,6 +111,7 @@ class SugestaoCompraManager extends Component
                 'variacao_id' => $variacaoId,
                 'nome' => $prod->nome_completo,
                 'sku' => $prod->sku,
+                'categoria_id' => $prod->categoria_id,
                 'categoria' => $prod->categoria,
                 'custo' => (float)($prod->preco_custo ?? 0),
                 'venda_media' => round($vendaMediaDiaria, 3),
@@ -122,7 +124,7 @@ class SugestaoCompraManager extends Component
         }
 
         if ($this->categoriaFiltro) {
-            $resultado = array_filter($resultado, fn($r) => $r['categoria'] === $this->categoriaFiltro);
+            $resultado = array_filter($resultado, fn($r) => (int)$r['categoria_id'] === (int)$this->categoriaFiltro);
         }
         if ($this->filtroUrgencia === 'critica') {
             $resultado = array_filter($resultado, fn($r) => $r['urgencia'] === 'critica');
