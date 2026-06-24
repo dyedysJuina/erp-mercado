@@ -11,7 +11,7 @@ class PdvVenda extends Model
     protected $fillable = [
         'loja_id', 'caixa_abertura_id', 'usuario_id', 'cliente_id',
         'status', 'subtotal', 'desconto', 'acrescimo', 'total',
-        'finalizada_at',
+        'finalizada_at', 'fiscal_documento_id',
     ];
 
     protected function casts(): array

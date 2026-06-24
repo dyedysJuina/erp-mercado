@@ -37,22 +37,22 @@ class NfceService
 
             $impostoService = app(CalculoImpostoService::class);
 
-            $venda->loadMissing(['itens.variacao.unidadeMedida', 'itens.variacao.codigosBarras']);
+            $venda->loadMissing(['itens.variacao.unidadeMedida', 'itens.variacao.codigosBarras', 'itens.variacao.ncm', 'itens.variacao.cfop']);
 
             foreach ($venda->itens as $item) {
                 $variacao = $item->variacao;
                 if (!$variacao) continue;
 
-                $ncmCodigo = optional(\App\Models\Ncm::find($variacao->ncm_id))->codigo ?? '00000000';
-                $cfopCodigo = optional(\App\Models\Cfop::find($variacao->cfop_id))->codigo ?? '5102';
+                $ncmCodigo = $variacao->ncm?->codigo ?? '00000000';
+                $cfopCodigo = $variacao->cfop?->codigo ?? '5102';
                 $unidSigla = optional($variacao->unidadeMedida)->sigla ?? 'UN';
                 $codBarras = $variacao->codigosBarras?->firstWhere('principal', true)?->codigo ?? 'SEM GTIN';
 
                 $valorUnit = $item->preco_unitario;
                 $quant = $item->quantidade;
-                $total = $valorUnit * $quant;
+                $total = $item->valor_total;
 
-                $tributos = $impostoService->calcular($variacao, $valorUnit);
+                $tributos = $impostoService->calcular($variacao, $total);
 
                 FiscalDocumentoItem::create([
                     'fiscal_documento_id' => $doc->id,
@@ -163,8 +163,8 @@ class NfceService
         $ide->addChild('cDV', substr($doc->chave_acesso, -1));
         $ide->addChild('tpAmb', $perfil?->ambiente ?? '2');
         $ide->addChild('finNFe', '1');
-        $ide->addChild('indFinal', '0');
-        $ide->addChild('indPres', '0');
+        $ide->addChild('indFinal', '1');
+        $ide->addChild('indPres', '1');
         $ide->addChild('indIntermed', '0');
         $ide->addChild('procEmi', '0');
         $ide->addChild('verProc', config('app.nfce_versao', 'ERP Mercado 1.0'));
@@ -229,7 +229,7 @@ class NfceService
             $det = $infNFe->addChild('det');
             $det->addAttribute('nItem', (string)$nItem);
             $prod = $det->addChild('prod');
-            $prod->addChild('cProd', (string)$item->id);
+            $prod->addChild('cProd', $item->variacao?->sku ?? (string)$item->produto_variacao_id);
             $gtin = $item->variacao?->codigosBarras?->firstWhere('principal', true)?->codigo;
             $prod->addChild('cEAN', $gtin ?: 'SEM GTIN');
             $prod->addChild('xProd', $item->variacao?->nome_completo ?? 'Produto');

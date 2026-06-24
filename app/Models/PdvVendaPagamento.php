@@ -10,7 +10,7 @@ class PdvVendaPagamento extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['venda_id', 'forma_pagamento_id', 'valor', 'parcelas', 'cancelado_at'];
+    protected $fillable = ['venda_id', 'forma_pagamento_id', 'valor', 'parcelas', 'cancelado_at', 'autorizacao'];
 
     protected function casts(): array
     {

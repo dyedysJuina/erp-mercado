@@ -438,6 +438,7 @@ class VendaManager extends Component
 
         try {
             $doc = $service->emitir($venda, $loja);
+            $venda->update(['fiscal_documento_id' => $doc->id]);
             $this->nfceDocumentoId = $doc->id;
             $this->nfceStatus = $doc->status;
         } catch (\Exception $e) {
