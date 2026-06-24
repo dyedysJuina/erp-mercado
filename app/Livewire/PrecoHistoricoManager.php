@@ -72,7 +72,7 @@ class PrecoHistoricoManager extends Component
             'total_ajustes' => $q->count(),
             'media_variacao' => (float)$q->avg(DB::raw('preco_novo - preco_anterior')),
             'maior_subida' => (float)(clone $q)->whereColumn('preco_novo', '>', 'preco_anterior')->max(DB::raw('preco_novo - preco_anterior')) ?: 0,
-            'maior_queda' => (float)(clone $q)->whereColumn('preco_novo', '<', 'preco_anterior')->min(DB::raw('preco_novo - preco_anterior')) ?: 0,
+            'maior_queda' => abs((float)(clone $q)->whereColumn('preco_novo', '<', 'preco_anterior')->min(DB::raw('preco_novo - preco_anterior')) ?: 0),
         ];
     }
 

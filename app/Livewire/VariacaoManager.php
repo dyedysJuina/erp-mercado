@@ -265,7 +265,10 @@ class VariacaoManager extends Component
             $m = collect($this->optsMarcas)->firstWhere('id', (int)$this->marca_id);
             if ($m) $parts[] = $m['nome'];
         }
-        if ($this->conteudo_quantidade && $this->conteudo_quantidade !== '0') $parts[] = (string)(float)$this->conteudo_quantidade;
+        if ($this->conteudo_quantidade && $this->conteudo_quantidade !== '0') {
+            $qtd = (float)$this->conteudo_quantidade;
+            $parts[] = $qtd == (int)$qtd ? (string)(int)$qtd : rtrim(rtrim(number_format($qtd, 3, ',', '.'), '0'), ',');
+        }
         if ($this->unidade_medida_id) {
             $u = collect($this->optsUnidades)->firstWhere('id', (int)$this->unidade_medida_id);
             if ($u) $parts[] = $u['sigla'];
@@ -399,7 +402,8 @@ class VariacaoManager extends Component
     {
         $this->apresentacoes[] = [
             'id' => null, 'nome' => '', 'tipo' => 'multipla',
-            'embalagem_id' => '', 'unidade_medida_id' => '',
+            'embalagem_id' => $this->embalagem_id ?: '',
+            'unidade_medida_id' => $this->unidade_medida_id ?: '',
             'conteudo_quantidade' => '1', 'fator_conversao_estoque' => '1',
             'permite_venda' => true, 'permite_compra' => true, 'controla_estoque' => true,
             'principal_venda' => false, 'principal_compra' => false, 'principal_estoque' => false,
@@ -565,6 +569,14 @@ class VariacaoManager extends Component
                         'ordem' => $ordem++, 'principal' => $ordem === 1, 'is_active' => true,
                     ]);
                 }
+            }
+
+            // Atualiza foto_capa_url
+            $principal = ProdutoImagem::where('produto_variacao_id', $var->id)->where('principal', true)->first();
+            if ($principal) {
+                $var->update(['foto_capa_url' => $principal->url]);
+            } elseif ($var->foto_capa_url) {
+                $var->update(['foto_capa_url' => null]);
             }
 
             DBFacade::commit();

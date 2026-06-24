@@ -158,7 +158,7 @@ class PrecoManager extends Component
             $precoVenda = round($item->preco_custo * (1 + $valor / 100), 2);
             $item->update(['margem_percentual' => $valor, 'preco_venda' => $precoVenda]);
         } elseif ($field === 'preco_venda') {
-            $margem = $item->preco_custo > 0 ? round(($valor - $item->preco_custo) / $valor * 100, 1) : 0;
+            $margem = $item->preco_custo > 0 ? round(($valor - $item->preco_custo) / $valor * 100, 1) : $item->margem_percentual;
             $item->update(['preco_venda' => $valor, 'margem_percentual' => $margem]);
         } else {
             $item->update([$field => $valor]);
