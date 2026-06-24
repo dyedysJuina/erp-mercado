@@ -47,6 +47,10 @@ class FinanceiroManager extends Component
 
     public string $toastMsg = '';
     public bool $toastShow = false;
+    public bool $pagarModalOpen = false;
+    public ?int $pagarLancamentoId = null;
+    public string $pagarContaId = '';
+    public string $pagarData = '';
 
     public function atualizarStatusAtrasados(): void
     {
@@ -248,7 +252,26 @@ class FinanceiroManager extends Component
 
     public function pagar(int $id): void
     {
-        FinanceiroLancamento::findOrFail($id)->update(['status' => 'pago', 'data_pagamento' => now()]);
+        $lancamento = FinanceiroLancamento::findOrFail($id);
+        if (!$lancamento->conta_id) {
+            $this->pagarLancamentoId = $id;
+            $this->pagarContaId = '';
+            $this->pagarData = now()->format('Y-m-d');
+            $this->pagarModalOpen = true;
+            return;
+        }
+        $lancamento->update(['status' => 'pago', 'data_pagamento' => now()]);
+        $this->toast('Lançamento marcado como pago!');
+    }
+
+    public function confirmarPagamento(): void
+    {
+        if (!$this->pagarLancamentoId) return;
+        $update = ['status' => 'pago', 'data_pagamento' => $this->pagarData ?: now()];
+        if ($this->pagarContaId) $update['conta_id'] = (int)$this->pagarContaId;
+        FinanceiroLancamento::findOrFail($this->pagarLancamentoId)->update($update);
+        $this->pagarModalOpen = false;
+        $this->pagarLancamentoId = null;
         $this->toast('Lançamento marcado como pago!');
     }
 

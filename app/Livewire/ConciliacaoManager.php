@@ -90,6 +90,7 @@ class ConciliacaoManager extends Component
                 ->when($this->dataInicio, fn($q) => $q->whereDate('data_pagamento', '>=', $this->dataInicio))
                 ->when($this->dataFim, fn($q) => $q->whereDate('data_pagamento', '<=', $this->dataFim))
                 ->when(strlen(trim($this->busca)) >= 2, fn($q) => $q->where('descricao', 'like', '%' . $this->busca . '%'))
+                ->limit(500)
                 ->pluck('id')->toArray();
             $this->loteIds = $ids;
         } else {

@@ -120,4 +120,16 @@
             </div>
         </div>
     </div>
+
+    {{-- PAGAR MODAL --}}
+    <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;visibility:hidden;">
+        <div x-data="{ open: $wire.entangle('pagarModalOpen') }" x-show="open" x-cloak style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;visibility:visible;">
+            <div style="background:var(--surface);border-radius:16px;border:1px solid var(--border);width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2);padding:20px;">
+                <h3 style="margin:0 0 14px;font-size:15px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px;"><i class="fas fa-check-circle" style="color:var(--success);"></i> Confirmar Pagamento</h3>
+                <div style="margin-bottom:12px;"><div class="field"><label>Conta (opcional)</label><select wire:model="pagarContaId"><option value="">Selecione...</option>@foreach ($this->contas as $c)<option value="{{ $c['id'] }}">{{ $c['nome'] }}</option>@endforeach</select></div></div>
+                <div style="margin-bottom:14px;"><div class="field"><label>Data do pagamento</label><input wire:model="pagarData" type="date"></div></div>
+                <div style="display:flex;gap:8px;"><button type="button" wire:click="$set('pagarModalOpen', false)" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-weight:700;color:var(--text);font-size:13px;">Cancelar</button><button type="button" wire:click="confirmarPagamento" style="flex:1;padding:10px;border:0;border-radius:8px;background:var(--success);color:#fff;cursor:pointer;font-weight:800;font-size:13px;">Confirmar</button></div>
+            </div>
+        </div>
+    </div>
 </div>

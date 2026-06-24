@@ -228,6 +228,7 @@ class PdvSaleService
             DB::table('financeiro_lancamentos')->insert([
                 'empresa_id' => $store->empresa_id,
                 'loja_id' => $storeId,
+                'categoria_id' => $this->defaultReceitaCategoriaId(),
                 'pdv_venda_id' => $saleId,
                 'tipo' => 'receita',
                 'descricao' => "Venda PDV #{$saleId}",
@@ -426,6 +427,7 @@ class PdvSaleService
             DB::table('financeiro_lancamentos')->insert([
                 'empresa_id' => $store->empresa_id,
                 'loja_id' => $storeId,
+                'categoria_id' => $this->defaultReceitaCategoriaId(),
                 'pdv_venda_id' => $saleId,
                 'tipo' => 'receita',
                 'descricao' => "Venda PDV #{$saleId}",
@@ -480,5 +482,13 @@ class PdvSaleService
     private function fail(string $field, string $message): never
     {
         throw ValidationException::withMessages([$field => $message]);
+    }
+
+    private function defaultReceitaCategoriaId(): ?int
+    {
+        return \App\Models\FinanceiroCategoria::where('tipo', 'receita')
+            ->where('ativo', true)
+            ->orderBy('id')
+            ->value('id');
     }
 }
