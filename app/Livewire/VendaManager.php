@@ -186,18 +186,24 @@ class VendaManager extends Component
             return;
         }
 
+        $abertura = PdvCaixaAbertura::lockForUpdate()->find($this->caixaAberturaId);
+        if (!$abertura || $abertura->usuario_id !== auth()->id()) {
+            $this->addError('loja_id', 'Caixa não pertence ao usuário atual.');
+            return;
+        }
+
         $valorEncontrado = (float) str_replace(',', '.', str_replace('.', '', $this->closeValorEncontrado ?? '0'));
         $dados = $this->dadosFechamento();
 
-        DB::table('pdv_caixas_aberturas')
-            ->where('id', $this->caixaAberturaId)
-            ->update([
+        DB::transaction(function () use ($abertura, $valorEncontrado, $dados) {
+            $abertura->update([
                 'status' => 'fechado',
                 'valor_fechamento_informado' => $valorEncontrado,
                 'valor_fechamento_sistema' => $dados['esperado'],
                 'diferenca' => $dados['diferenca'],
                 'fechado_at' => now(),
             ]);
+        });
 
         $this->caixaAberturaId = null;
         $this->closeModalOpen = false;
@@ -209,24 +215,24 @@ class VendaManager extends Component
     #[Computed]
     public function dadosFechamento(): array
     {
-        $abertura = (float) str_replace(',', '.', str_replace('.', '', $this->valorAbertura ?? '0'));
+        $abertura = PdvCaixaAbertura::whereKey($this->caixaAberturaId)->value('valor_abertura') ?? 0;
         $vendas = PdvVenda::where('caixa_abertura_id', $this->caixaAberturaId)->where('status', 'concluida')->sum('total');
         $sangrias = $this->totalSangrias;
         $suprimentos = $this->totalSuprimentos;
-        $esperado = $abertura + $vendas + $suprimentos - $sangrias;
+        $esperado = (float)$abertura + (float)$vendas + $suprimentos - $sangrias;
 
         $encontrado = $this->closeValorEncontrado !== ''
             ? (float) str_replace(',', '.', str_replace('.', '', $this->closeValorEncontrado))
             : 0;
 
         return [
-            'abertura' => $abertura,
+            'abertura' => (float)$abertura,
             'vendas' => (float) $vendas,
             'sangrias' => $sangrias,
             'suprimentos' => $suprimentos,
             'esperado' => $esperado,
             'encontrado' => $encontrado,
-            'diferenca' => $encontrado > 0 ? $encontrado - $esperado : null,
+            'diferenca' => $encontrado - $esperado,
         ];
     }
     public ?string $nfceStatus = null;
@@ -254,7 +260,7 @@ class VendaManager extends Component
 
         if (!$result || !$result->preco_venda || $result->preco_venda <= 0) return;
 
-        $qtd = max(1, (int)$this->decimal($this->qtdBusca));
+        $qtd = max(0.001, $this->decimal($this->qtdBusca));
 
         $idx = array_search($variacaoId, array_column($this->carrinho, 'variacao_id'));
         if ($idx !== false) {
@@ -418,6 +424,11 @@ class VendaManager extends Component
             return;
         }
 
+        if ((int)$venda->loja_id !== (int)$this->loja_id) {
+            $this->addError('nfce', 'Venda não pertence a esta loja.');
+            return;
+        }
+
         $loja = Loja::with('cidade.estado')->find((int)$this->loja_id);
         if (!$loja) { $this->nfceStatus = 'erro'; return; }
 
@@ -451,6 +462,10 @@ class VendaManager extends Component
 
         if (! $this->caixaAberturaId || ! auth()->id()) {
             throw ValidationException::withMessages(['caixa' => 'O caixa desta venda não está aberto.']);
+        }
+
+        if (!$this->verificarAutorizacaoCaixa()) {
+            throw ValidationException::withMessages(['caixa' => 'Caixa não pertence ao usuário atual.']);
         }
 
         $result = $service->finalizeMulti(
@@ -580,7 +595,8 @@ class VendaManager extends Component
         }
 
         $this->cancelModalOpen = false;
-        $this->toast(($this->cancelTipo === 'item' ? $qtd . ' item(ns)' : 'Venda') . ' cancelado(a). Motivo: ' . $this->cancelMotivo);
+        $label = $this->cancelTipo === 'item' ? $qtd . ' item(ns) cancelado(s)' : 'Carrinho limpo';
+        $this->toast($label . '. Motivo: ' . $this->cancelMotivo);
         $this->cancelItensSelecionados = [];
     }
 
@@ -681,12 +697,12 @@ class VendaManager extends Component
 
                     $item->update(['cancelado' => true]);
 
-                    \App\Models\EstoqueSaldo::where('loja_id', (int)$this->loja_id)
+                    \App\Models\EstoqueSaldo::where('loja_id', (int)$venda->loja_id)
                         ->where('produto_variacao_id', $item->produto_variacao_id)
                         ->increment('quantidade_atual', $qtd);
 
                     \App\Models\EstoqueMovimentacao::create([
-                        'loja_id' => (int)$this->loja_id,
+                        'loja_id' => (int)$venda->loja_id,
                         'produto_variacao_id' => $item->produto_variacao_id,
                         'origem_tipo' => 'pdv_devolucao',
                         'origem_id' => $dev->id,
@@ -701,7 +717,7 @@ class VendaManager extends Component
             $dev->update(['valor_total' => $totalDevolvido]);
 
             \App\Models\FinanceiroLancamento::create([
-                'loja_id' => (int)$this->loja_id,
+                'loja_id' => (int)$venda->loja_id,
                 'tipo' => 'receita',
                 'descricao' => 'Devolução venda #' . $venda->id,
                 'valor' => -$totalDevolvido,
@@ -787,6 +803,11 @@ class VendaManager extends Component
 
         if (!$this->caixaAberturaId) {
             $this->addError('movValor', 'Caixa não está aberto.');
+            return;
+        }
+
+        if (!$this->verificarAutorizacaoCaixa()) {
+            $this->addError('movValor', 'Caixa não pertence ao usuário atual.');
             return;
         }
 
@@ -883,9 +904,8 @@ class VendaManager extends Component
         $totalDinheiro = collect($this->pagamentos)
             ->where('tipo', 'dinheiro')
             ->sum('valor');
-        $recebido = max($totalDinheiro, $this->decimal($this->valorRecebido));
         $total = $this->total;
-        return max(0, $recebido - $total);
+        return max(0, $totalDinheiro - $total);
     }
 
     #[Computed]
@@ -923,6 +943,7 @@ class VendaManager extends Component
     public function historico(): array
     {
         return PdvVenda::with('pagamentos')
+            ->where('caixa_abertura_id', $this->caixaAberturaId)
             ->where('created_at', '>=', now()->startOfDay())
             ->when(mb_strlen(trim($this->filtroHistorico)) >= 1, fn ($query) => $query->where('id', 'like', '%'.$this->filtroHistorico.'%'))
             ->latest('created_at')
@@ -1002,8 +1023,19 @@ class VendaManager extends Component
         $sub = $this->subtotal;
         $pDesc = $this->decimal($this->descontoPct);
         $pAcr = $this->decimal($this->acrescimoPct);
-        $this->desconto = number_format($sub * $pDesc / 100, 2, ',', '');
-        $this->acrescimo = number_format($sub * $pAcr / 100, 2, ',', '');
+        if ($pDesc > 0) {
+            $this->desconto = number_format($sub * $pDesc / 100, 2, ',', '');
+        }
+        if ($pAcr > 0) {
+            $this->acrescimo = number_format($sub * $pAcr / 100, 2, ',', '');
+        }
+    }
+
+    private function verificarAutorizacaoCaixa(): bool
+    {
+        if (!$this->caixaAberturaId) return false;
+        $abertura = PdvCaixaAbertura::find($this->caixaAberturaId);
+        return $abertura && $abertura->usuario_id === auth()->id();
     }
 
     private function decimal(mixed $value, int $scale = 2): float
