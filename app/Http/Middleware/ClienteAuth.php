@@ -10,7 +10,14 @@ class ClienteAuth
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!session()->has('cliente_id')) {
+        $clienteId = session('cliente_id');
+        if (!$clienteId) {
+            return redirect()->route('vitrine.auth');
+        }
+
+        $cliente = \App\Models\Cliente::find($clienteId);
+        if (!$cliente || !$cliente->ativo) {
+            session()->forget(['cliente_id', 'cliente_nome']);
             return redirect()->route('vitrine.auth');
         }
 

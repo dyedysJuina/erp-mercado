@@ -83,7 +83,7 @@ class PedidoOnlineManager extends Component
         if ($this->periodo === 'hoje') {
             $q->whereDate('created_at', today());
         } elseif ($this->periodo === 'semana') {
-            $q->whereDate('created_at', '>=', now()->startOfWeek());
+            $q->whereDate('created_at', '>=', now()->startOfWeek(Carbon\Carbon::MONDAY));
         }
         if ($this->filtroStatus) $q->where('status', $this->filtroStatus);
         if ($this->filtroEntrega) $q->where('tipo_entrega', $this->filtroEntrega);
