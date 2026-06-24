@@ -88,7 +88,8 @@ class StorefrontManager extends Component
     public function finalizar(array $carrinho): ?int
     {
         if (empty($carrinho)) return null;
-        if (!session('cliente_id')) return null;
+        $clienteId = (int)(session('cliente_id'));
+        if (!$clienteId) return null;
         if (strlen(trim($this->clienteNome)) < 2) return null;
 
         $total = 0;
@@ -120,8 +121,6 @@ class StorefrontManager extends Component
 
         if (empty($itensValidos)) return null;
 
-        $clienteId = (int) session('cliente_id');
-
         $pedido = null;
 
         DB::transaction(function () use ($itensValidos, $total, $clienteId, &$pedido) {
@@ -152,18 +151,42 @@ class StorefrontManager extends Component
                     'status_item' => 'pendente',
                 ]);
 
-                // Baixa estoque
+                // Baixa estoque com lock e proteção de negativo
                 $saldo = EstoqueSaldo::where('loja_id', $this->lojaId)
                     ->where('produto_variacao_id', $item['variacao_id'])
+                    ->lockForUpdate()
                     ->first();
-                if ($saldo) {
+
+                if ($saldo && $saldo->quantidade_atual >= $item['quantidade']) {
                     $saldo->decrement('quantidade_atual', $item['quantidade']);
                 }
+
+                // Registra movimentação de estoque
+                DB::table('estoque_movimentacoes')->insert([
+                    'loja_id' => $this->lojaId,
+                    'produto_variacao_id' => $item['variacao_id'],
+                    'usuario_id' => $clienteId,
+                    'origem_tipo' => 'pedido',
+                    'origem_id' => $pedido,
+                    'tipo' => 'saida_venda_online',
+                    'quantidade' => -$item['quantidade'],
+                    'justificativa' => 'Pedido online #' . $pedido,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
+
+            // Registra pagamento pendente
+            \App\Models\PedidoPagamento::create([
+                'pedido_id' => $pedido,
+                'forma_pagamento_id' => $this->formaPagamentoId ?? 1,
+                'status' => 'pendente',
+                'valor' => $total,
+            ]);
 
             // Gera financeiro (receita pendente)
             FinanceiroLancamento::create([
-                'empresa_id' => 1,
+                'empresa_id' => \App\Models\Loja::where('id', $this->lojaId)->value('empresa_id') ?? 1,
                 'loja_id' => $this->lojaId,
                 'pdv_venda_id' => null,
                 'pedido_id' => $pedido,

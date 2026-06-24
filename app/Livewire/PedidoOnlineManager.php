@@ -124,7 +124,47 @@ class PedidoOnlineManager extends Component
 
     public function alterarStatus(int $id, string $status): void
     {
-        Pedido::findOrFail($id)->update(['status' => $status]);
+        $pedido = Pedido::with('itens')->findOrFail($id);
+        $oldStatus = $pedido->status;
+
+        DB::transaction(function () use ($pedido, $status, $oldStatus) {
+            $pedido->update(['status' => $status]);
+
+            DB::table('pedidos_status_historico')->insert([
+                'pedido_id' => $pedido->id,
+                'usuario_id' => auth()->id(),
+                'status_anterior' => $oldStatus,
+                'status_novo' => $status,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Se cancelar, restaura estoque
+            if ($status === 'cancelado') {
+                foreach ($pedido->itens as $item) {
+                    if (in_array($item->status_item, ['pendente', 'separado', 'substituido'])) {
+                        $qtd = (float) $item->quantidade_solicitada;
+                        \App\Models\EstoqueSaldo::where('loja_id', $pedido->loja_id)
+                            ->where('produto_variacao_id', $item->produto_variacao_id)
+                            ->increment('quantidade_atual', $qtd);
+
+                        DB::table('estoque_movimentacoes')->insert([
+                            'loja_id' => $pedido->loja_id,
+                            'produto_variacao_id' => $item->produto_variacao_id,
+                            'usuario_id' => auth()->id(),
+                            'origem_tipo' => 'pedido',
+                            'origem_id' => $pedido->id,
+                            'tipo' => 'entrada_compra',
+                            'quantidade' => $qtd,
+                            'justificativa' => 'Cancelamento pedido #' . $pedido->id,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+        });
+
         $this->toast("Pedido #{$id} alterado para '{$status}'.");
     }
 
@@ -132,8 +172,8 @@ class PedidoOnlineManager extends Component
     {
         if (!$this->pedidoEditando) return;
         Pedido::findOrFail($this->pedidoEditando)->update([
-            'separador_id' => $this->separador_id ? (int)$this->separador_id : null,
-            'entregador_id' => $this->entregador_id ? (int)$this->entregador_id : null,
+            'separador_id' => $this->separadorId ? (int)$this->separadorId : null,
+            'entregador_id' => $this->entregadorId ? (int)$this->entregadorId : null,
         ]);
         $this->toast('Operadores atribuidos.');
     }
