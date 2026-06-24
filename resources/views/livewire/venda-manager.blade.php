@@ -12,6 +12,17 @@
     @if ($this->passo === 'finalizada')
         @include('livewire.pdv.finalizada')
     @endif
+
+    {{-- Toast --}}
+    <div x-data="{ show: @entangle('toastShow'), msg: @entangle('toastMsg') }" 
+         x-show="show" 
+         x-init="$watch('show', v => { if (v) setTimeout(() => show = false, 3000); })"
+         x-transition.duration.300ms
+         style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:9999;background:#0f172a;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;"
+         x-cloak>
+        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+        <span x-text="msg"></span>
+    </div>
 </div>
 
 <script>
