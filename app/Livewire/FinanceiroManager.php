@@ -30,6 +30,7 @@ class FinanceiroManager extends Component
     public string $categoria_id = '';
     public string $conta_id = '';
     public string $centro_custo_id = '';
+    public string $observacao = '';
     public string $dataInicio = '';
     public string $dataFim = '';
 
@@ -62,6 +63,9 @@ class FinanceiroManager extends Component
             'data_vencimento' => ['required', 'date'],
             'tipo' => ['required', 'in:receita,despesa'],
             'status' => ['required', 'in:pendente,pago,cancelado'],
+            'categoria_id' => ['nullable', 'integer', 'exists:financeiro_categorias,id'],
+            'conta_id' => ['nullable', 'integer', 'exists:financeiro_contas,id'],
+            'centro_custo_id' => ['nullable', 'integer', 'exists:financeiro_centros_custos,id'],
         ];
     }
 
@@ -119,7 +123,7 @@ class FinanceiroManager extends Component
         return FinanceiroLancamento::where('status', 'pendente')
             ->whereDate('data_vencimento', '>=', now())
             ->orderBy('data_vencimento')
-            ->limit(8)
+            ->limit(20)
             ->get()
             ->toArray();
     }
@@ -151,7 +155,7 @@ class FinanceiroManager extends Component
         if ($this->filtroTipo) $q->where('tipo', $this->filtroTipo);
         if ($this->dataInicio) $q->whereDate('data_vencimento', '>=', $this->dataInicio);
         if ($this->dataFim) $q->whereDate('data_vencimento', '<=', $this->dataFim);
-        if (strlen(trim($this->busca)) >= 2) {
+        if (strlen(trim($this->busca)) >= 1) {
             $q->where('descricao', 'like', '%' . $this->busca . '%');
         }
         return $q->paginate(25);
@@ -194,11 +198,13 @@ class FinanceiroManager extends Component
         $this->categoria_id = '';
         $this->conta_id = '';
         $this->centro_custo_id = '';
+        $this->observacao = '';
     }
 
-    public function abrirModal(): void
+    public function abrirModal(string $tipo = 'despesa'): void
     {
         $this->resetForm();
+        $this->tipo = $tipo;
         $this->modalOpen = true;
     }
 
@@ -227,6 +233,7 @@ class FinanceiroManager extends Component
             'centro_custo_id' => $this->centro_custo_id ? (int)$this->centro_custo_id : null,
             'conta_id' => $this->conta_id ? (int)$this->conta_id : null,
             'usuario_id' => auth()->id(),
+            'observacao' => $this->observacao ?: null,
         ];
 
         if ($this->editandoId) {
@@ -267,6 +274,11 @@ class FinanceiroManager extends Component
 
     public function excluirCategoria(int $id): void
     {
+        $emUso = FinanceiroLancamento::where('categoria_id', $id)->exists();
+        if ($emUso) {
+            $this->toast('Categoria possui lançamentos vinculados. Não foi desativada.');
+            return;
+        }
         FinanceiroCategoria::findOrFail($id)->update(['ativo' => false]);
         $this->toast('Categoria desativada!');
     }
