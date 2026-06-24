@@ -19,6 +19,8 @@ class SugestaoCompraManager extends Component
     public string $diasReposicao = '15';
     public string $filtroUrgencia = '';
     public string $fornecedorFiltro = '';
+    public bool $selecionarTodos = false;
+    public array $selecionados = [];
 
     public string $toastMsg = '';
     public bool $toastShow = false;
@@ -41,6 +43,14 @@ class SugestaoCompraManager extends Component
         return \App\Models\Fornecedor::where('ativo', true)->orderBy('razao_social')->get(['id', 'razao_social'])->toArray();
     }
 
+    public function updatedSelecionarTodos(): void
+    {
+        $sugestoes = $this->sugestoes();
+        $this->selecionados = $this->selecionarTodos
+            ? collect($sugestoes)->pluck('variacao_id')->map(fn($id) => (string)$id)->toArray()
+            : [];
+    }
+
     public function gerarPedido(): void
     {
         if (!$this->lojaFiltro || !$this->fornecedorFiltro) {
@@ -48,17 +58,20 @@ class SugestaoCompraManager extends Component
             return;
         }
 
-        $sugestoes = $this->sugestoes();
-        if (empty($sugestoes)) {
-            $this->toast('Nenhuma sugestão para gerar pedido.');
+        if (empty($this->selecionados)) {
+            $this->toast('Selecione pelo menos um item para gerar o pedido.');
             return;
         }
+
+        $sugestoes = collect($this->sugestoes())->keyBy('variacao_id');
+        $selecionadosIds = array_map('intval', $this->selecionados);
 
         $lojaId = (int)$this->lojaFiltro;
         $fornecedorId = (int)$this->fornecedorFiltro;
         $totalProdutos = 0;
+        $itensNoPedido = 0;
 
-        DB::transaction(function () use ($sugestoes, $lojaId, $fornecedorId, &$totalProdutos) {
+        DB::transaction(function () use ($sugestoes, $selecionadosIds, $lojaId, $fornecedorId, &$totalProdutos, &$itensNoPedido) {
             $pedido = \App\Models\CompraPedido::create([
                 'loja_id' => $lojaId,
                 'fornecedor_id' => $fornecedorId,
@@ -68,11 +81,15 @@ class SugestaoCompraManager extends Component
                 'total_pedido' => 0,
             ]);
 
-            foreach ($sugestoes as $s) {
+            foreach ($selecionadosIds as $variacaoId) {
+                $s = $sugestoes->get($variacaoId);
+                if (!$s) continue;
+
                 $qtd = max(1, (float)$s['sugestao']);
                 $custo = (float)$s['custo'];
                 $totalItem = $qtd * $custo;
                 $totalProdutos += $totalItem;
+                $itensNoPedido++;
 
                 \App\Models\CompraPedidoItem::create([
                     'compra_pedido_id' => $pedido->id,
@@ -91,7 +108,9 @@ class SugestaoCompraManager extends Component
             $this->pedidoCriado = $pedido->id;
         });
 
-        $this->toast('Pedido #' . $this->pedidoCriado . ' gerado com sucesso!');
+        $this->toast("Pedido #{$this->pedidoCriado} gerado com {$itensNoPedido} item(ns)!");
+        $this->selecionados = [];
+        $this->selecionarTodos = false;
     }
 
     public ?int $pedidoCriado = null;

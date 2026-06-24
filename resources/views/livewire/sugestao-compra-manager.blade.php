@@ -63,6 +63,9 @@
                 @php $sugestoes = $this->sugestoes(); @endphp
                 <table class="data-table" style="font-size:12px;">
                     <thead><tr>
+                        <th class="data-table-th text-center" style="width:32px;">
+                            <input type="checkbox" wire:model.live="selecionarTodos" style="cursor:pointer;">
+                        </th>
                         <th class="data-table-th text-left">Produto</th>
                         <th class="data-table-th text-left">Depto</th>
                         <th class="data-table-th text-right">Venda Media</th>
@@ -76,7 +79,9 @@
                     <tbody>
                         @forelse ($sugestoes as $s)
                             <tr class="data-table-tr" style="{{ $s['urgencia'] === 'critica' ? 'background:color-mix(in srgb,var(--danger)4%,transparent);' : ($s['urgencia'] === 'media' ? 'background:color-mix(in srgb,var(--warning)3%,transparent);' : '') }}">
-                                <td class="data-table-td font-semibold" style="text-transform:uppercase;font-size:11px;">{{ $s['nome'] }}</td>
+                                <td class="data-table-td text-center">
+                                    <input type="checkbox" wire:model.live="selecionados" value="{{ $s['variacao_id'] }}" style="cursor:pointer;">
+                                </td>
                                 <td class="data-table-td text-muted" style="font-size:10px;">{{ $s['categoria'] }}</td>
                                 <td class="data-table-td text-right font-semibold">{{ number_format($s['venda_media'], 3, ',', '.') }}/dia</td>
                                 <td class="data-table-td text-right font-bold {{ $s['estoque_atual'] <= $s['estoque_min'] ? 'text-danger' : '' }}">{{ number_format($s['estoque_atual'], 3, ',', '.') }}</td>
@@ -95,7 +100,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="data-table-empty">Nenhum produto encontrado. Selecione uma loja com vendas.</td></tr>
+                            <tr><td colspan="10" class="data-table-empty">Nenhum produto encontrado. Selecione uma loja com vendas.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
