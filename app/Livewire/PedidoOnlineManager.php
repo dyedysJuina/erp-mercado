@@ -51,7 +51,8 @@ class PedidoOnlineManager extends Component
     #[Computed]
     public function totais(): array
     {
-        $q = Pedido::where('origem', 'site');
+        $q = Pedido::where('origem', 'site')
+            ->where('loja_id', auth()->user()->loja_id);
         return [
             'hoje' => (clone $q)->whereDate('created_at', today())->count(),
             'novos' => (clone $q)->where('status', 'recebido')->count(),
@@ -72,6 +73,7 @@ class PedidoOnlineManager extends Component
     public function listagem()
     {
         $q = Pedido::where('origem', 'site')
+            ->where('loja_id', auth()->user()->loja_id)
             ->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
             ->orderByRaw("FIELD(status, 'recebido','confirmado','em_separacao','pronto_retirada','pronto_entrega')")
             ->orderBy('created_at', 'desc');
@@ -87,7 +89,8 @@ class PedidoOnlineManager extends Component
         if ($this->dataFim) $q->whereDate('created_at', '<=', $this->dataFim);
         if (strlen(trim($this->busca)) >= 2) {
             $q->where(function ($w) {
-                $w->where('codigo', 'like', "%{$this->busca}%")
+                $w->where('id', (int)$this->busca)
+                  ->orWhere('codigo', 'like', "%{$this->busca}%")
                   ->orWhereHas('cliente', fn($c) => $c->where('nome', 'like', "%{$this->busca}%"));
             });
         }
@@ -124,6 +127,12 @@ class PedidoOnlineManager extends Component
 
     public function alterarStatus(int $id, string $status): void
     {
+        $allowed = ['recebido', 'confirmado', 'em_separacao', 'pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado'];
+        if (!in_array($status, $allowed)) {
+            $this->toast('Status inválido.');
+            return;
+        }
+
         $pedido = Pedido::with('itens')->findOrFail($id);
         $oldStatus = $pedido->status;
 
@@ -138,6 +147,19 @@ class PedidoOnlineManager extends Component
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            // Notifica cliente sobre mudança de status
+            if ($pedido->cliente_id) {
+                \App\Models\Notificacao::create([
+                    'usuario_id' => null,
+                    'canal' => 'sistema',
+                    'titulo' => 'Pedido #' . $pedido->id,
+                    'mensagem' => 'Seu pedido foi atualizado para: ' . $status,
+                    'link' => '/vitrine/pedidos',
+                    'status' => 'pendente',
+                    'cliente_id' => $pedido->cliente_id,
+                ]);
+            }
 
             // Se cancelar, restaura estoque
             if ($status === 'cancelado') {
@@ -180,9 +202,10 @@ class PedidoOnlineManager extends Component
 
     public function alterarStatusItem(int $itemId, string $status): void
     {
-        DB::table('pedidos_itens')->where('id', $itemId)->update([
+        $item = PedidoItem::findOrFail($itemId);
+        $item->update([
             'status_item' => $status,
-            'separado_por' => $status === 'separado' ? auth()->id() : DB::raw('separado_por'),
+            'separado_por' => $status === 'separado' ? auth()->id() : $item->separado_por,
         ]);
         $this->toast('Item atualizado.');
     }

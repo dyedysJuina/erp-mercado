@@ -56,4 +56,14 @@ class Pedido extends Model
     {
         return $this->belongsTo(Loja::class, 'loja_id');
     }
+
+    public function endereco()
+    {
+        return $this->belongsTo(ClientesEndereco::class, 'endereco_id');
+    }
+
+    public function formaPagamento()
+    {
+        return $this->belongsTo(FormaPagamento::class, 'forma_pagamento_id');
+    }
 }

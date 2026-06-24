@@ -185,9 +185,12 @@ class StorefrontManager extends Component
             ]);
 
             // Gera financeiro (receita pendente)
+            $catReceita = \App\Models\FinanceiroCategoria::where('tipo', 'receita')
+                ->where('ativo', true)->orderBy('id')->value('id');
             FinanceiroLancamento::create([
                 'empresa_id' => \App\Models\Loja::where('id', $this->lojaId)->value('empresa_id') ?? 1,
                 'loja_id' => $this->lojaId,
+                'categoria_id' => $catReceita,
                 'pdv_venda_id' => null,
                 'pedido_id' => $pedido,
                 'tipo' => 'receita',
