@@ -80,6 +80,12 @@ class PedidoListaManager extends Component
         $this->toast('Filtros limpos.');
     }
 
+    public function enviar(int $id): void
+    {
+        CompraPedido::findOrFail($id)->update(['status' => 'enviado']);
+        $this->toast("Pedido #{$id} marcado como enviado!");
+    }
+
     public function toast(string $msg): void
     {
         $this->toastMsg = $msg;
