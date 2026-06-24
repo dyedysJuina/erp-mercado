@@ -13,11 +13,12 @@ class SugestaoCompraManager extends Component
 {
     use WithPagination;
 
-    public string $lojaFiltro = '2';
+    public string $lojaFiltro = '';
     public string $categoriaFiltro = '';
     public string $diasBase = '30';
     public string $diasReposicao = '15';
     public string $filtroUrgencia = '';
+    public string $fornecedorFiltro = '';
 
     public string $toastMsg = '';
     public bool $toastShow = false;
@@ -33,6 +34,67 @@ class SugestaoCompraManager extends Component
     {
         return Categoria::where('nivel', 1)->orderBy('nome')->get(['id', 'nome'])->toArray();
     }
+
+    #[Computed]
+    public function fornecedores(): array
+    {
+        return \App\Models\Fornecedor::where('ativo', true)->orderBy('razao_social')->get(['id', 'razao_social'])->toArray();
+    }
+
+    public function gerarPedido(): void
+    {
+        if (!$this->lojaFiltro || !$this->fornecedorFiltro) {
+            $this->toast('Selecione a loja e o fornecedor antes de gerar o pedido.');
+            return;
+        }
+
+        $sugestoes = $this->sugestoes();
+        if (empty($sugestoes)) {
+            $this->toast('Nenhuma sugestão para gerar pedido.');
+            return;
+        }
+
+        $lojaId = (int)$this->lojaFiltro;
+        $fornecedorId = (int)$this->fornecedorFiltro;
+        $totalProdutos = 0;
+
+        DB::transaction(function () use ($sugestoes, $lojaId, $fornecedorId, &$totalProdutos) {
+            $pedido = \App\Models\CompraPedido::create([
+                'loja_id' => $lojaId,
+                'fornecedor_id' => $fornecedorId,
+                'usuario_id' => auth()->id(),
+                'status' => 'rascunho',
+                'total_produtos' => 0,
+                'total_pedido' => 0,
+            ]);
+
+            foreach ($sugestoes as $s) {
+                $qtd = max(1, (float)$s['sugestao']);
+                $custo = (float)$s['custo'];
+                $totalItem = $qtd * $custo;
+                $totalProdutos += $totalItem;
+
+                \App\Models\CompraPedidoItem::create([
+                    'compra_pedido_id' => $pedido->id,
+                    'produto_variacao_id' => (int)$s['variacao_id'],
+                    'quantidade_pedida' => $qtd,
+                    'custo_unitario' => $custo,
+                    'total_item' => $totalItem,
+                ]);
+            }
+
+            $pedido->update([
+                'total_produtos' => $totalProdutos,
+                'total_pedido' => $totalProdutos,
+            ]);
+
+            $this->pedidoCriado = $pedido->id;
+        });
+
+        $this->toast('Pedido #' . $this->pedidoCriado . ' gerado com sucesso!');
+    }
+
+    public ?int $pedidoCriado = null;
 
     public function sugestoes()
     {

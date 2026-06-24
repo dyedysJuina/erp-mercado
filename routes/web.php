@@ -71,7 +71,7 @@ Route::middleware('auth')->group(function () {
     $r('/importador', \App\Livewire\ImportadorManager::class, 'importador', 'dashboard');
     $r('/lojas', \App\Livewire\LojaManager::class, 'lojas');
     $r('/estoque', \App\Livewire\EstoqueManager::class, 'estoque');
-    $r('/compras', \App\Livewire\CompraManager::class, 'compras');
+    $r('/compras', \App\Livewire\SugestaoCompraManager::class, 'compras');
     $r('/pedidos', \App\Livewire\PedidoListaManager::class, 'pedidos');
     $r('/pedidos-online', \App\Livewire\PedidoOnlineManager::class, 'pedidos-online', 'pedidos');
     $r('/vendas', \App\Livewire\VendaManager::class, 'vendas', 'pdv');
