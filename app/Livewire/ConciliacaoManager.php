@@ -15,6 +15,7 @@ class ConciliacaoManager extends Component
     public string $aba = 'pendentes';
     public string $busca = '';
     public string $filtroTipo = '';
+    public string $filtroLoja = '';
     public string $dataInicio = '';
     public string $dataFim = '';
     public string $dataConcilia = '';
@@ -25,9 +26,18 @@ class ConciliacaoManager extends Component
     public string $toastMsg = '';
     public bool $toastShow = false;
 
+    private function lojaScope($q)
+    {
+        $lojaId = auth()->user()->loja_id;
+        if ($this->filtroLoja) $lojaId = (int)$this->filtroLoja;
+        if ($lojaId) $q->where('loja_id', $lojaId);
+        return $q;
+    }
+
     public function pendentes()
     {
         $q = FinanceiroLancamento::where('status', 'pago')->whereNull('reconcilied_at')->orderBy('data_pagamento', 'desc');
+        $this->lojaScope($q);
         if ($this->filtroTipo) $q->where('tipo', $this->filtroTipo);
         if ($this->dataInicio) $q->whereDate('data_pagamento', '>=', $this->dataInicio);
         if ($this->dataFim) $q->whereDate('data_pagamento', '<=', $this->dataFim);
@@ -40,6 +50,7 @@ class ConciliacaoManager extends Component
     public function reconciliados()
     {
         $q = FinanceiroLancamento::whereNotNull('reconcilied_at')->with('reconciliedBy')->orderBy('reconcilied_at', 'desc');
+        $this->lojaScope($q);
         if ($this->filtroTipo) $q->where('tipo', $this->filtroTipo);
         if ($this->dataInicio) $q->whereDate('reconcilied_at', '>=', $this->dataInicio);
         if ($this->dataFim) $q->whereDate('reconcilied_at', '<=', $this->dataFim);
@@ -50,7 +61,9 @@ class ConciliacaoManager extends Component
     public function totais(): array
     {
         $pendentes = FinanceiroLancamento::where('status', 'pago')->whereNull('reconcilied_at');
+        $this->lojaScope($pendentes);
         $recon = FinanceiroLancamento::whereNotNull('reconcilied_at');
+        $this->lojaScope($recon);
         return [
             'pendente_total' => (float)$pendentes->sum('valor'),
             'pendente_count' => $pendentes->count(),
@@ -72,6 +85,7 @@ class ConciliacaoManager extends Component
     {
         if ($value) {
             $ids = FinanceiroLancamento::where('status', 'pago')->whereNull('reconcilied_at')
+                ->when(true, fn($q) => $this->lojaScope($q))
                 ->when($this->filtroTipo, fn($q) => $q->where('tipo', $this->filtroTipo))
                 ->when($this->dataInicio, fn($q) => $q->whereDate('data_pagamento', '>=', $this->dataInicio))
                 ->when($this->dataFim, fn($q) => $q->whereDate('data_pagamento', '<=', $this->dataFim))

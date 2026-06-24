@@ -47,6 +47,13 @@ class FinanceiroManager extends Component
     public string $toastMsg = '';
     public bool $toastShow = false;
 
+    public function atualizarStatusAtrasados(): void
+    {
+        FinanceiroLancamento::where('status', 'pendente')
+            ->where('data_vencimento', '<', now()->startOfDay())
+            ->update(['status' => 'atrasado']);
+    }
+
     protected function rules(): array
     {
         return [
@@ -292,6 +299,7 @@ class FinanceiroManager extends Component
 
     public function render()
     {
+        $this->atualizarStatusAtrasados();
         return view('livewire.financeiro-manager')
             ->layout('components.layouts.app', ['title' => 'Financeiro · ERP Mercado']);
     }

@@ -89,8 +89,8 @@ class DashboardManager extends Component
     #[Computed]
     public function resultadoLiquido(): float
     {
-        $rec = FinanceiroLancamento::where('tipo', 'receita')->where('status', 'pago')->whereMonth('created_at', now()->month)->sum('valor');
-        $des = FinanceiroLancamento::where('tipo', 'despesa')->where('status', 'pago')->whereMonth('created_at', now()->month)->sum('valor');
+        $rec = FinanceiroLancamento::where('tipo', 'receita')->where('status', 'pago')->whereMonth('data_pagamento', now()->month)->sum('valor');
+        $des = FinanceiroLancamento::where('tipo', 'despesa')->where('status', 'pago')->whereMonth('data_pagamento', now()->month)->sum('valor');
         return $rec - $des;
     }
 
