@@ -113,6 +113,7 @@ class PdvSaleServiceTest extends TestCase
             $table->unsignedBigInteger('forma_pagamento_id');
             $table->decimal('valor', 12, 2);
             $table->integer('parcelas');
+            $table->timestamp('cancelado_at')->nullable();
         });
         Schema::create('estoque_movimentacoes', function (Blueprint $table): void {
             $table->id();

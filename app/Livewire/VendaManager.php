@@ -263,6 +263,14 @@ class VendaManager extends Component
         $qtd = max(0.001, $this->decimal($this->qtdBusca));
 
         $idx = array_search($variacaoId, array_column($this->carrinho, 'variacao_id'));
+        $qtdAtual = $idx !== false ? (float)$this->carrinho[$idx]['quantidade'] : 0;
+        $estoqueDisponivel = (float)($result->estoque_disponivel ?? 0);
+        if ($qtdAtual + $qtd > $estoqueDisponivel) {
+            if ($idx === false && $estoqueDisponivel <= 0) return;
+            $qtd = max(0.001, $estoqueDisponivel - $qtdAtual);
+            if ($qtd <= 0) return;
+        }
+
         if ($idx !== false) {
             $this->carrinho[$idx]['quantidade'] += $qtd;
         } else {
@@ -350,12 +358,8 @@ class VendaManager extends Component
         $fp = FormaPagamento::find($formaId);
         if (!$fp) return;
 
-        // Se já existe pagamento cobrindo o total, limpa para trocar
         $restante = $this->total - collect($this->pagamentos)->sum('valor');
-        if ($restante <= 0.01) {
-            $this->pagamentos = [];
-            $restante = $this->total;
-        }
+        if ($restante <= 0.01) return;
 
         if ($fp->tipo === 'dinheiro') {
             $valor = $this->decimal($this->valorRecebido);
@@ -466,6 +470,10 @@ class VendaManager extends Component
 
         if (!$this->verificarAutorizacaoCaixa()) {
             throw ValidationException::withMessages(['caixa' => 'Caixa não pertence ao usuário atual.']);
+        }
+
+        if ($this->cliente_id !== '' && !Cliente::whereKey((int)$this->cliente_id)->exists()) {
+            throw ValidationException::withMessages(['cliente_id' => 'Cliente não encontrado.']);
         }
 
         $result = $service->finalizeMulti(
@@ -758,9 +766,12 @@ class VendaManager extends Component
         DB::transaction(function () use ($venda) {
             $venda->update(['status' => 'cancelada']);
 
+            $totalEstornado = 0;
+
             foreach ($venda->itens as $item) {
                 if (!$item->cancelado) {
                     $qtd = (float) $item->quantidade;
+                    $totalEstornado += (float) $item->total_item;
 
                     $item->update(['cancelado' => true]);
 
@@ -780,6 +791,13 @@ class VendaManager extends Component
                     ]);
                 }
             }
+
+            \App\Models\PdvDevolucao::create([
+                'venda_id' => $venda->id,
+                'usuario_id' => auth()->id(),
+                'motivo' => 'Estorno: ' . $this->estornoMotivo,
+                'valor_total' => $totalEstornado,
+            ]);
 
             \App\Models\PdvVendaPagamento::where('venda_id', $venda->id)
                 ->whereNull('cancelado_at')
@@ -813,13 +831,21 @@ class VendaManager extends Component
 
         $valor = (float) str_replace(',', '.', str_replace('.', '', $this->movValor));
 
-        PdvCaixaMovimento::create([
-            'caixa_abertura_id' => $this->caixaAberturaId,
-            'usuario_id' => auth()->id(),
-            'tipo' => $this->movTipo,
-            'valor' => $valor,
-            'motivo' => $this->movMotivo,
-        ]);
+        DB::transaction(function () use ($valor) {
+            $abertura = PdvCaixaAbertura::lockForUpdate()->find($this->caixaAberturaId);
+            if (!$abertura || $abertura->usuario_id !== auth()->id()) {
+                $this->addError('movValor', 'Caixa não disponível.');
+                return;
+            }
+
+            PdvCaixaMovimento::create([
+                'caixa_abertura_id' => $this->caixaAberturaId,
+                'usuario_id' => auth()->id(),
+                'tipo' => $this->movTipo,
+                'valor' => $valor,
+                'motivo' => $this->movMotivo,
+            ]);
+        });
 
         $label = $this->movTipo === 'sangria' ? 'Sangria' : 'Suprimento';
         $this->toast("{$label} de R$ " . number_format($valor, 2, ',', '.') . ' registrada.');
