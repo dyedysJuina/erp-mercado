@@ -131,6 +131,12 @@ class EmbalagemManager extends Component
         $this->toast('Embalagem excluída.');
     }
 
+    public function restaurar(int $id): void
+    {
+        Embalagem::withTrashed()->findOrFail($id)->restore();
+        $this->toast('Embalagem restaurada.');
+    }
+
     public function toast(string $msg): void
     {
         $this->toastMsg = $msg;

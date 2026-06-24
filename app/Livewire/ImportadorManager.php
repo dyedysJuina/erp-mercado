@@ -265,12 +265,12 @@ class ImportadorManager extends Component
     {
         $caminho = $this->arquivo->getRealPath();
         $linhas = file($caminho, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        $inicio = 1 + ($this->lote - 1) * 20;
-        $fim = min($inicio + 19, count($linhas));
+        $inicio = 1 + ($this->lote - 1) * 10;
+        $fim = min($inicio + 9, count($linhas));
 
         // Cachear todas as categorias existentes para evitar N+1
         if ($this->tipo === 'produtos') {
-            $this->cacheCategoria = Categoria::pluck('id', 'nome')->toArray();
+            $this->cacheCategoria = Categoria::get()->mapWithKeys(fn($c) => [$c->parent_id . '|' . $c->nome => $c->id])->toArray();
         }
 
         DB::beginTransaction();
@@ -324,8 +324,9 @@ class ImportadorManager extends Component
             $parts = array_map('trim', explode('>', $caminho));
             $parentId = null;
             foreach ($parts as $p) {
-                if (isset($this->cacheCategoria[$p])) {
-                    $catId = $this->cacheCategoria[$p];
+                $cacheKey = $parentId . '|' . $p;
+                if (isset($this->cacheCategoria[$cacheKey])) {
+                    $catId = $this->cacheCategoria[$cacheKey];
                 } else {
                     $cat = Categoria::where('nome', $p)->where('parent_id', $parentId)->first();
                     if (!$cat) {
@@ -336,7 +337,7 @@ class ImportadorManager extends Component
                         ]);
                     }
                     $catId = $cat->id;
-                    $this->cacheCategoria[$p] = $catId;
+                    $this->cacheCategoria[$cacheKey] = $catId;
                 }
                 $parentId = $catId;
                 $categoriaId = $catId;

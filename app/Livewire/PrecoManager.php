@@ -173,17 +173,14 @@ class PrecoManager extends Component
 
     private function registrarHistorico(int $variacaoId, float $antigo, float $novo): void
     {
-        $lojas = \App\Models\Loja::where('tabela_preco_id', $this->tabelaId)->where('ativo', true)->pluck('id');
-        foreach ($lojas as $lojaId) {
-            PrecoHistorico::create([
-                'loja_id' => $lojaId,
-                'produto_variacao_id' => $variacaoId,
-                'usuario_id' => auth()->id(),
-                'preco_anterior' => $antigo,
-                'preco_novo' => $novo,
-                'motivo' => 'Ajuste manual',
-            ]);
-        }
+        PrecoHistorico::create([
+            'loja_id' => 0,
+            'produto_variacao_id' => $variacaoId,
+            'usuario_id' => auth()->id(),
+            'preco_anterior' => $antigo,
+            'preco_novo' => $novo,
+            'motivo' => 'Ajuste manual tabela #' . $this->tabelaId,
+        ]);
     }
 
     public function aplicarEmLote(): void
