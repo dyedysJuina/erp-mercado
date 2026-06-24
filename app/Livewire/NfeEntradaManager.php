@@ -213,8 +213,9 @@ class NfeEntradaManager extends Component
             // 4. Create financial entry (contas a pagar)
             if ($this->data_recebimento) {
                 $totalNota = collect($this->itens)->sum('total');
+                $empresaId = Loja::where('id', $lojaId)->value('empresa_id') ?? 1;
                 DB::table('financeiro_lancamentos')->insert([
-                    'empresa_id' => 1,
+                    'empresa_id' => $empresaId,
                     'loja_id' => $lojaId,
                     'fornecedor_id' => $this->fornecedor_id,
                     'compra_pedido_id' => $this->compra_pedido_id,

@@ -312,6 +312,9 @@ class FinanceiroManager extends Component
     public function render()
     {
         $this->atualizarStatusAtrasados();
+        if (!auth()->user()->hasAnyRole(['Admin', 'Gerente', 'Financeiro'])) {
+            abort(403, 'Acesso restrito ao módulo Financeiro.');
+        }
         return view('livewire.financeiro-manager')
             ->layout('components.layouts.app', ['title' => 'Financeiro · ERP Mercado']);
     }

@@ -736,9 +736,9 @@ class VendaManager extends Component
             \App\Models\FinanceiroLancamento::create([
                 'empresa_id' => auth()->user()->empresa_id ?? 1,
                 'loja_id' => (int)$venda->loja_id,
-                'tipo' => 'receita',
+                'tipo' => 'despesa',
                 'descricao' => 'Devolução venda #' . $venda->id,
-                'valor' => -$totalDevolvido,
+                'valor' => $totalDevolvido,
                 'data_competencia' => now(),
                 'data_vencimento' => now(),
                 'data_pagamento' => now(),
