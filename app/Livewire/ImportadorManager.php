@@ -445,17 +445,16 @@ class ImportadorManager extends Component
             ]);
         }
 
-        // Price in all active lojas price tables
+        // Price in user's store price table
         if ($precoVenda > 0 || $precoCusto > 0) {
-            $tabelas = DB::table('lojas')->where('ativo', true)
-                ->whereNotNull('tabela_preco_id')->distinct()->pluck('tabela_preco_id');
-            foreach ($tabelas as $tabelaId) {
+            $tabelaId = auth()->user()->loja?->tabela_preco_id;
+            if ($tabelaId) {
                 $data = [];
                 if ($precoCusto > 0) $data['preco_custo'] = $precoCusto;
                 if ($precoVenda > 0) $data['preco_venda'] = $precoVenda;
                 if ($margem > 0) $data['margem_percentual'] = $margem;
                 if (!empty($data)) {
-                    DB::table('tabela_precos_itens')->updateOrInsert(
+                    \App\Models\TabelaPrecoItem::updateOrCreate(
                         ['tabela_preco_id' => $tabelaId, 'produto_variacao_id' => $variacao->id],
                         $data
                     );

@@ -65,13 +65,9 @@ class CategoryManager extends Component
     #[Computed]
     public function metrics(): array
     {
-        $raiz = Categoria::whereNull('parent_id')->count();
-        $n2 = Categoria::whereNotNull('parent_id')
-            ->whereIn('parent_id', fn($q) => $q->select('id')->from('categorias')->whereNull('parent_id'))
-            ->count();
-        $n3 = Categoria::whereNotNull('parent_id')
-            ->whereNotIn('parent_id', fn($q) => $q->select('id')->from('categorias')->whereNull('parent_id'))
-            ->count();
+        $raiz = Categoria::where('nivel', 1)->count();
+        $n2 = Categoria::where('nivel', 2)->count();
+        $n3 = Categoria::where('nivel', 3)->count();
         $inativas = Categoria::where('ativo', false)->count();
         $produtos = ProdutoBase::count();
         return ['raiz' => $raiz, 'n2' => $n2, 'n3' => $n3, 'inativas' => $inativas, 'produtos' => $produtos];

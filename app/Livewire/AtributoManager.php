@@ -85,7 +85,10 @@ class AtributoManager extends Component
     #[Computed]
     public function totalTipos(): int { return Atributo::distinct('tipo')->count('tipo'); }
     #[Computed]
-    public function totalVinculados(): int { return 0; }
+    public function totalVinculados(): int
+    {
+        return \App\Models\ProdutoVariacaoAtributo::distinct('atributo_id')->count('atributo_id');
+    }
 
     public function selecionar(int $id): void
     {

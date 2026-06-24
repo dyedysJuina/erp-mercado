@@ -31,7 +31,8 @@ class EmbalagemManager extends Component
     public function duplicata(): ?string
     {
         if (strlen(trim($this->nome)) < 2) return null;
-        $q = Embalagem::where('nome', $this->nome);
+        $nome = trim($this->nome);
+        $q = Embalagem::where('nome', $nome);
         if ($this->editandoId) $q->where('id', '!=', $this->editandoId);
         return $q->exists() ? $this->nome : null;
     }

@@ -288,6 +288,9 @@ class ProdutoBaseManager extends Component
 
     public function render()
     {
+        if (!auth()->user()->hasAnyRole(['Admin', 'Gerente', 'Financeiro'])) {
+            abort(403, 'Acesso restrito.');
+        }
         return view('livewire.produto-base-manager')
             ->layout('components.layouts.app', ['title' => 'Produtos Base · ERP Mercado']);
     }

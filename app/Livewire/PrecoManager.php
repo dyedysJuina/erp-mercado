@@ -26,7 +26,6 @@ class PrecoManager extends Component
 
     public string $loteMargem = '';
     public string $loteAcrescimo = '';
-    public string $loteAlvo = 'all';
 
     public string $mensagem = '';
     public string $toastMsg = '';
