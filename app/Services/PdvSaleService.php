@@ -124,6 +124,7 @@ class PdvSaleService
 
             $items = [];
             $subtotalCents = 0;
+            $itemDiscountCentsTotal = 0;
 
             foreach ($normalizedCart as $cartItem) {
                 $variation = $variations->get($cartItem['variation_id']);
@@ -151,11 +152,13 @@ class PdvSaleService
 
                 $unitCents = (int) round((float) $price->preco_venda * 100, 0, PHP_ROUND_HALF_UP);
                 $lineCents = (int) round($quantity * $unitCents, 0, PHP_ROUND_HALF_UP);
+                $itemDiscCents = (int) round($this->cents($cartItem['desconto'] ?? 0), 0, PHP_ROUND_HALF_UP);
+                $itemDiscountCentsTotal += $itemDiscCents;
                 $subtotalCents += $lineCents;
-                $items[] = compact('variation', 'stock', 'quantity', 'unitCents', 'lineCents');
+                $items[] = compact('variation', 'stock', 'quantity', 'unitCents', 'lineCents', 'itemDiscCents');
             }
 
-            $totalCents = $subtotalCents + $additionCents - $discountCents;
+            $totalCents = $subtotalCents + $additionCents - $discountCents - $itemDiscountCentsTotal;
             if ($totalCents <= 0) {
                 $this->fail('desconto', 'O total da venda precisa ser maior que zero.');
             }
@@ -185,8 +188,8 @@ class PdvSaleService
                     'produto_variacao_id' => $item['variation']->id,
                     'quantidade' => $item['quantity'],
                     'preco_unitario' => $item['unitCents'] / 100,
-                    'desconto' => 0,
-                    'total_item' => $item['lineCents'] / 100,
+                    'desconto' => $item['itemDiscCents'] / 100,
+                    'total_item' => ($item['lineCents'] - $item['itemDiscCents']) / 100,
                     'cancelado' => false,
                 ]);
 
@@ -301,6 +304,7 @@ class PdvSaleService
 
             $items = [];
             $subtotalCents = 0;
+            $itemDiscountCentsTotal = 0;
 
             foreach ($normalizedCart as $cartItem) {
                 $variation = $variations->get($cartItem['variation_id']);
@@ -328,11 +332,13 @@ class PdvSaleService
 
                 $unitCents = (int) round((float) $price->preco_venda * 100, 0, PHP_ROUND_HALF_UP);
                 $lineCents = (int) round($quantity * $unitCents, 0, PHP_ROUND_HALF_UP);
+                $itemDiscCents = (int) round($this->cents($cartItem['desconto'] ?? 0), 0, PHP_ROUND_HALF_UP);
+                $itemDiscountCentsTotal += $itemDiscCents;
                 $subtotalCents += $lineCents;
-                $items[] = compact('variation', 'stock', 'quantity', 'unitCents', 'lineCents');
+                $items[] = compact('variation', 'stock', 'quantity', 'unitCents', 'lineCents', 'itemDiscCents');
             }
 
-            $totalCents = $subtotalCents + $additionCents - $discountCents;
+            $totalCents = $subtotalCents + $additionCents - $discountCents - $itemDiscountCentsTotal;
             if ($totalCents <= 0) {
                 $this->fail('desconto', 'O total da venda precisa ser maior que zero.');
             }
@@ -372,8 +378,8 @@ class PdvSaleService
                     'produto_variacao_id' => $item['variation']->id,
                     'quantidade' => $item['quantity'],
                     'preco_unitario' => $item['unitCents'] / 100,
-                    'desconto' => 0,
-                    'total_item' => $item['lineCents'] / 100,
+                    'desconto' => $item['itemDiscCents'] / 100,
+                    'total_item' => ($item['lineCents'] - $item['itemDiscCents']) / 100,
                     'cancelado' => false,
                 ]);
 

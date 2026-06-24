@@ -55,12 +55,12 @@
                 @endif
             </div>
             <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff;border-radius:10px;">
-                <div style="display:grid;grid-template-columns:36px 36px 1fr 70px 90px 90px 30px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;flex-shrink:0;">
-                    <span></span><span></span><span>Descrição</span><span style="text-align:right;">Qtde.</span><span style="text-align:right;">Unit.</span><span style="text-align:right;">Total</span><span></span>
+                <div style="display:grid;grid-template-columns:36px 36px 1fr 70px 70px 70px 90px 30px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;flex-shrink:0;">
+                    <span></span><span></span><span>Descrição</span><span style="text-align:right;">Qtde.</span><span style="text-align:right;">Desconto</span><span style="text-align:right;">Unit.</span><span style="text-align:right;">Total</span><span></span>
                 </div>
                 <div style="flex:1;overflow-y:auto;">
                     @forelse ($this->carrinho as $index => $item)
-                        <div wire:key="cart-{{ $item['variacao_id'] }}" style="display:grid;grid-template-columns:36px 36px 1fr 70px 90px 90px 30px;padding:6px 12px;border-bottom:1px solid #f1f5f9;align-items:center;font-size:12px;color:#0f172a;min-height:48px;">
+                        <div wire:key="cart-{{ $item['variacao_id'] }}" style="display:grid;grid-template-columns:36px 36px 1fr 70px 70px 70px 90px 30px;padding:6px 12px;border-bottom:1px solid #f1f5f9;align-items:center;font-size:12px;color:#0f172a;min-height:48px;">
                             <span style="font-weight:700;color:#94a3b8;font-size:11px;">{{ $index + 1 }}</span>
                             <div style="position:relative;">
                                 <img src="{{ $item['foto_url'] ? asset('storage/' . $item['foto_url']) : '' }}"
@@ -78,8 +78,9 @@
                                 <span style="font-size:10px;color:#94a3b8;font-family:monospace;">{{ $item['codigo_barras'] ?: ($item['sku'] ?? '#' . $item['variacao_id']) }}</span>
                             </div>
                             <input wire:model.live.debounce.300ms="carrinho.{{ $index }}.quantidade" type="text" inputmode="decimal" style="text-align:right;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;width:60px;margin-left:auto;color:#0f172a;background:#fff;outline:none;min-height:36px;">
+                            <input wire:model.live.debounce.300ms="carrinho.{{ $index }}.desconto" type="text" inputmode="decimal" placeholder="0,00" style="text-align:right;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;width:60px;margin-left:auto;color:var(--danger);background:#fffcfc;outline:none;min-height:36px;">
                             <span style="text-align:right;font-weight:500;font-size:12px;">R$ {{ number_format((float)$item['preco'], 2, ',', '.') }}</span>
-                            <span style="text-align:right;font-weight:700;font-size:12px;">R$ {{ number_format(((float)$item['quantidade'])*(float)$item['preco'], 2, ',', '.') }}</span>
+                            <span style="text-align:right;font-weight:700;font-size:12px;">R$ {{ number_format(((float)$item['quantidade'])*(float)$item['preco'] - (float)($item['desconto'] ?? 0), 2, ',', '.') }}</span>
                             <button wire:click="removerItem({{ $index }})" style="background:none;border:0;color:var(--danger);cursor:pointer;font-size:14px;padding:4px;min-height:36px;"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     @empty

@@ -290,6 +290,7 @@ class VendaManager extends Component
                 'foto_url' => $result->foto_url ?? '',
                 'preco' => (float)$result->preco_venda,
                 'quantidade' => $qtd,
+                'desconto' => 0,
             ];
         }
         $this->buscaProduto = '';
@@ -324,6 +325,13 @@ class VendaManager extends Component
         if (isset($this->carrinho[$index])) {
             unset($this->carrinho[$index]);
             $this->carrinho = array_values($this->carrinho);
+        }
+    }
+
+    public function atualizarDescontoItem(int $idx, mixed $valor): void
+    {
+        if (isset($this->carrinho[$idx])) {
+            $this->carrinho[$idx]['desconto'] = $this->decimal($valor);
         }
     }
 
@@ -911,7 +919,9 @@ class VendaManager extends Component
         $total = 0;
         foreach ($this->carrinho as $item) {
             $qtd = (float) ($item['quantidade'] ?? 0);
-            $total += ($item['preco'] ?? 0) * max(0, $qtd);
+            $preco = ($item['preco'] ?? 0);
+            $descItem = (float) ($item['desconto'] ?? 0);
+            $total += ($preco * max(0, $qtd)) - max(0, $descItem);
         }
         return $total;
     }
