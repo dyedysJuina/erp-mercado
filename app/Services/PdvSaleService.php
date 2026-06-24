@@ -144,9 +144,7 @@ class PdvSaleService
                 }
 
                 $available = $stock ? (float) $stock->quantidade_atual - (float) $stock->quantidade_reservada : 0;
-                $availableCents = (int) round($available * 1000);
-                $quantityCents = (int) round($quantity * 1000);
-                if ($availableCents < $quantityCents) {
+                if ($available < $quantity - 0.0001) {
                     $this->fail('carrinho', "Estoque insuficiente para {$variation->nome_completo}. Disponível: ".number_format($available, 3, ',', '.'));
                 }
 
@@ -325,9 +323,7 @@ class PdvSaleService
                 }
 
                 $available = $stock ? (float) $stock->quantidade_atual - (float) $stock->quantidade_reservada : 0;
-                $availableCents = (int) round($available * 1000);
-                $quantityCents = (int) round($quantity * 1000);
-                if ($availableCents < $quantityCents) {
+                if ($available < $quantity - 0.0001) {
                     $this->fail('carrinho', "Estoque insuficiente para {$variation->nome_completo}. Disponível: ".number_format($available, 3, ',', '.'));
                 }
 

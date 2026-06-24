@@ -180,10 +180,11 @@ class NfeEntradaManager extends Component
                 ]);
 
                 // Update/create estoque_saldos
-                EstoqueSaldo::updateOrCreate(
+                $saldo = EstoqueSaldo::updateOrCreate(
                     ['loja_id' => $lojaId, 'produto_variacao_id' => $variacaoId],
-                    ['quantidade_atual' => DB::raw('COALESCE(quantidade_atual, 0) + ' . $qtd)]
+                    ['quantidade_atual' => 0, 'quantidade_reservada' => 0]
                 );
+                $saldo->increment('quantidade_atual', $qtd);
 
                 // Record movement
                 EstoqueMovimentacao::create([

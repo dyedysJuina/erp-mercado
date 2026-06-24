@@ -37,7 +37,7 @@ class EstoqueManager extends Component
         return [
             'movVariacaoId' => ['required', 'exists:produto_variacoes,id'],
             'movTipo' => ['required'],
-            'movQuantidade' => ['required', 'numeric', 'min:0.001'],
+            'movQuantidade' => ['required', 'numeric', 'min:0'],
             'movJustificativa' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -281,7 +281,13 @@ class EstoqueManager extends Component
             } elseif ($tipo === 'ajuste') {
                 $saldo->update(['quantidade_atual' => max(0, $qtd)]);
             } else {
-                $saldo->decrement('quantidade_atual', $qtd);
+                $updated = DB::table('estoque_saldos')
+                    ->where('id', $saldo->id)
+                    ->where('quantidade_atual', '>=', $qtd)
+                    ->decrement('quantidade_atual', $qtd);
+                if (!$updated) {
+                    throw new \Exception('Estoque insuficiente para esta movimentação.');
+                }
             }
 
             EstoqueMovimentacao::create([
