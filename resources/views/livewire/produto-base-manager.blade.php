@@ -66,7 +66,7 @@
                                 <td class="data-table-td text-center font-mono" style="font-size:12px;">{{ $p->ncm?->codigo ?? '—' }}</td>
                                 <td class="data-table-td text-center">@if ($p->cst_icms)<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:color-mix(in srgb,#6366f1 10%,transparent);color:#6366f1;">{{ $p->cst_icms }}</span>@else<span style="color:var(--muted);">—</span>@endif</td>
                                 <td class="data-table-td text-center"><span class="badge-sm {{ $p->ativo ? 'badge-ativo' : 'badge-inativo' }}">{{ $p->ativo ? 'Ativo' : 'Inativo' }}</span></td>
-                                <td class="data-table-td text-center"><button wire:click="desativar({{ $p->id }})" class="table-action-btn" style="font-size:11px;color:{{ $p->ativo ? 'var(--warning)' : 'var(--success)' }};" title="{{ $p->ativo ? 'Desativar' : 'Ativar' }}"><i class="fas {{ $p->ativo ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button></td>
+                                <td class="data-table-td text-center"><button wire:click="selecionar({{ $p->id }})" class="table-action-btn" style="font-size:11px;" title="Editar"><i class="fas fa-edit"></i></button><button wire:click="desativar({{ $p->id }})" class="table-action-btn" style="font-size:11px;color:{{ $p->ativo ? 'var(--warning)' : 'var(--success)' }};" title="{{ $p->ativo ? 'Desativar' : 'Ativar' }}"><i class="fas {{ $p->ativo ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button></td>
                             </tr>
                         @empty
                             <tr><td colspan="6" class="data-table-empty">Nenhum produto base encontrado.</td></tr>

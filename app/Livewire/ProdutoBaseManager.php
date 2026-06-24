@@ -16,6 +16,8 @@ use Livewire\WithPagination;
 class ProdutoBaseManager extends Component
 {
     use WithPagination;
+    public ?int $editandoId = null;
+
     public string $nivel1 = '';
     public string $nivel2 = '';
     public string $nivel3 = '';
@@ -35,6 +37,7 @@ class ProdutoBaseManager extends Component
 
     public string $toastMsg = '';
     public bool $toastShow = false;
+    public bool $ativo = true;
 
     protected function rules(): array
     {
@@ -161,18 +164,22 @@ class ProdutoBaseManager extends Component
         }
         $this->nome = ucwords(mb_strtolower(trim(preg_replace('/\s+/', ' ', $this->nome))));
         $slug = Str::slug($this->nome);
-        $existe = ProdutoBase::where('slug', $slug)->exists();
-        if ($existe) {
-            $this->addError('nome', "Produto '{$this->nome}' já existe.");
-            return;
+
+        if (!$this->editandoId) {
+            $existe = ProdutoBase::where('slug', $slug)->exists();
+            if ($existe) {
+                $this->addError('nome', "Produto '{$this->nome}' já existe.");
+                return;
+            }
         }
+
         $cat = Categoria::find((int)$this->nivel3);
         $caminho = $cat ? $cat->caminho : '';
-        ProdutoBase::create([
+        $data = [
             'categoria_id' => (int)$this->nivel3,
             'nome' => $this->nome,
             'slug' => $slug,
-            'ativo' => true,
+            'ativo' => $this->ativo ?? true,
             'ncm_id' => $this->ncm_id ? (int)$this->ncm_id : null,
             'cfop_id' => $this->cfop_id ? (int)$this->cfop_id : null,
             'cest_id' => $this->cest_id ? (int)$this->cest_id : null,
@@ -181,14 +188,50 @@ class ProdutoBaseManager extends Component
             'aliquota_icms' => $this->usar_aliquotas && $this->aliquota_icms !== '' ? (float)$this->aliquota_icms : null,
             'aliquota_pis' => $this->usar_aliquotas && $this->aliquota_pis !== '' ? (float)$this->aliquota_pis : null,
             'aliquota_cofins' => $this->usar_aliquotas && $this->aliquota_cofins !== '' ? (float)$this->aliquota_cofins : null,
-        ]);
+        ];
+
+        if ($this->editandoId) {
+            ProdutoBase::findOrFail($this->editandoId)->update($data);
+            $this->toast('Produto base atualizado!');
+        } else {
+            ProdutoBase::create($data);
+            $this->toast('Produto base cadastrado!');
+        }
         $this->limparForm();
-        $this->toast('Produto base cadastrado com sucesso!');
+    }
+
+    public function selecionar(int $id): void
+    {
+        $p = ProdutoBase::with('categoria.raiz')->findOrFail($id);
+        $this->editandoId = $p->id;
+        $this->nome = $p->nome;
+        $this->ativo = $p->ativo;
+        $cat = $p->categoria;
+        if ($cat) {
+            $raiz = $cat->raiz;
+            $this->nivel1 = (string)($raiz->id ?? $cat->id);
+            $this->nivel2 = (string)($cat->parent_id ?? $cat->id);
+            $this->nivel3 = (string)($cat->parent_id ? $cat->id : '');
+        }
+        $this->ncm_id = $p->ncm_id ? (string)$p->ncm_id : null;
+        $this->ncm_busca = '';
+        $this->cfop_id = $p->cfop_id ? (string)$p->cfop_id : null;
+        $this->cest_id = $p->cest_id ? (string)$p->cest_id : null;
+        $this->origem_mercadoria = $p->origem_mercadoria;
+        $this->cst_icms = $p->cst_icms;
+        if ($p->aliquota_icms !== null || $p->aliquota_pis !== null || $p->aliquota_cofins !== null) {
+            $this->usar_aliquotas = true;
+            $this->aliquota_icms = $p->aliquota_icms !== null ? (string)$p->aliquota_icms : null;
+            $this->aliquota_pis = $p->aliquota_pis !== null ? (string)$p->aliquota_pis : null;
+            $this->aliquota_cofins = $p->aliquota_cofins !== null ? (string)$p->aliquota_cofins : null;
+        }
     }
 
     private function limparForm(): void
     {
+        $this->editandoId = null;
         $this->nome = '';
+        $this->ativo = true;
         $this->ncm_id = null;
         $this->ncm_busca = '';
         $this->cfop_id = null;

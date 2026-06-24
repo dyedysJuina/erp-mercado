@@ -315,7 +315,8 @@ class VariacaoManager extends Component
         $this->embalagem_id = (string)$v->embalagem_id;
         $this->unidade_medida_id = (string)$v->unidade_medida_id;
         $this->conteudo_quantidade = (string)$v->conteudo_quantidade;
-        $this->qtd_por_embalagem = '1'; // default, apresentacoes tem seu proprio qtd
+        $apresEstoque = $v->apresentacoes->firstWhere('principal_estoque', true);
+        $this->qtd_por_embalagem = $apresEstoque ? (string)(int)($apresEstoque->fator_conversao_estoque ?? 1) : '1';
         $this->pesavel = $v->pesavel; $this->fracionado = $v->fracionado;
         $this->quantidade_minima_venda = (string)$v->quantidade_minima_venda;
         $this->passo_venda = (string)$v->passo_venda;
@@ -486,7 +487,9 @@ class VariacaoManager extends Component
             } else {
                 $var = ProdutoVariacao::findOrFail($this->editandoId);
                 $var->update($data);
-                ProdutoCodigoBarras::where('produto_variacao_id', $var->id)->delete();
+                $existingBarcodeIds = ProdutoCodigoBarras::where('produto_variacao_id', $var->id)->pluck('id');
+                $submittedBarcodeIds = collect($this->codigosBarras)->pluck('id')->filter()->toArray();
+                ProdutoCodigoBarras::whereIn('id', $existingBarcodeIds->diff($submittedBarcodeIds)->values())->delete();
                 ProdutoVariacaoAtributo::where('produto_variacao_id', $var->id)->delete();
                 ProdutoApresentacao::where('produto_variacao_id', $var->id)->delete();
             }

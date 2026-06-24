@@ -172,7 +172,6 @@ class CategoryManager extends Component
 
     protected function parentId(): ?int
     {
-        if ($this->nivel3) return (int)$this->nivel3;
         if ($this->nivel2) return (int)$this->nivel2;
         if ($this->nivel1) return (int)$this->nivel1;
         return null;
