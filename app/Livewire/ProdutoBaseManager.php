@@ -11,9 +11,11 @@ use App\Models\RegraFiscalNcm;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
 
 class ProdutoBaseManager extends Component
 {
+    use WithPagination;
     public string $nivel1 = '';
     public string $nivel2 = '';
     public string $nivel3 = '';
@@ -216,14 +218,14 @@ class ProdutoBaseManager extends Component
 
     // ─── LISTAGEM ───
 
-    public function listagem(): array
+    public function listagem()
     {
         $query = ProdutoBase::with('categoria', 'ncm')->orderBy('nome');
         if (strlen(trim($this->busca)) >= 2) {
             $q = $this->busca;
             $query->where('nome', 'like', "%{$q}%");
         }
-        return $query->get()->toArray();
+        return $query->paginate(50);
     }
 
     // ─── ACOES ───

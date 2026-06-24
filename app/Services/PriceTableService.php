@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ProdutoVariacao;
+use App\Models\TabelaPrecoItem;
 use App\Support\BrazilianNumber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -10,6 +12,26 @@ use InvalidArgumentException;
 
 class PriceTableService
 {
+    public function duplicatePrices(int $fromTableId, int $toTableId): void
+    {
+        if ($fromTableId === 0) {
+            $variacoes = ProdutoVariacao::where('ativo', true)->pluck('id');
+            foreach ($variacoes as $vid) {
+                TabelaPrecoItem::firstOrCreate([
+                    'tabela_preco_id' => $toTableId,
+                    'produto_variacao_id' => $vid,
+                ]);
+            }
+        } else {
+            DB::statement(
+                'INSERT INTO tabela_precos_itens (tabela_preco_id, produto_variacao_id, preco_custo, margem_percentual, preco_venda, preco_atacado, created_at, updated_at)
+                 SELECT ?, produto_variacao_id, preco_custo, margem_percentual, preco_venda, preco_atacado, NOW(), NOW()
+                 FROM tabela_precos_itens WHERE tabela_preco_id = ?',
+                [$toTableId, $fromTableId]
+            );
+        }
+    }
+
     public function saveItems(int $tableId, array $items): int
     {
         try {

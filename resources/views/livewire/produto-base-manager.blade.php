@@ -61,18 +61,21 @@
                     <tbody>
                         @forelse ($this->listagem() as $p)
                             <tr class="data-table-tr">
-                                <td class="data-table-td font-bold" style="display:flex;align-items:center;gap:10px;"><span style="width:32px;height:32px;border-radius:8px;background:color-mix(in srgb,#6366f1 10%,transparent);display:inline-flex;align-items:center;justify-content:center;color:#6366f1;font-size:13px;"><i class="fas fa-box"></i></span>{{ $p['nome'] }}</td>
-                                <td class="data-table-td text-muted" style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $p['categoria']['caminho'] ?? '' }}">{{ $p['categoria']['caminho'] ?? '—' }}</td>
-                                <td class="data-table-td text-center font-mono" style="font-size:12px;">{{ $p['ncm']['codigo'] ?? '—' }}</td>
-                                <td class="data-table-td text-center">@if ($p['cst_icms'])<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:color-mix(in srgb,#6366f1 10%,transparent);color:#6366f1;">{{ $p['cst_icms'] }}</span>@else<span style="color:var(--muted);">—</span>@endif</td>
-                                <td class="data-table-td text-center"><span class="badge-sm {{ $p['ativo'] ? 'badge-ativo' : 'badge-inativo' }}">{{ $p['ativo'] ? 'Ativo' : 'Inativo' }}</span></td>
-                                <td class="data-table-td text-center"><button wire:click="desativar({{ $p['id'] }})" class="table-action-btn" style="font-size:11px;color:{{ $p['ativo'] ? 'var(--warning)' : 'var(--success)' }};" title="{{ $p['ativo'] ? 'Desativar' : 'Ativar' }}"><i class="fas {{ $p['ativo'] ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button></td>
+                                <td class="data-table-td font-bold" style="display:flex;align-items:center;gap:10px;"><span style="width:32px;height:32px;border-radius:8px;background:color-mix(in srgb,#6366f1 10%,transparent);display:inline-flex;align-items:center;justify-content:center;color:#6366f1;font-size:13px;"><i class="fas fa-box"></i></span>{{ $p->nome }}</td>
+                                <td class="data-table-td text-muted" style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $p->categoria?->caminho ?? '' }}">{{ $p->categoria?->caminho ?? '—' }}</td>
+                                <td class="data-table-td text-center font-mono" style="font-size:12px;">{{ $p->ncm?->codigo ?? '—' }}</td>
+                                <td class="data-table-td text-center">@if ($p->cst_icms)<span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:color-mix(in srgb,#6366f1 10%,transparent);color:#6366f1;">{{ $p->cst_icms }}</span>@else<span style="color:var(--muted);">—</span>@endif</td>
+                                <td class="data-table-td text-center"><span class="badge-sm {{ $p->ativo ? 'badge-ativo' : 'badge-inativo' }}">{{ $p->ativo ? 'Ativo' : 'Inativo' }}</span></td>
+                                <td class="data-table-td text-center"><button wire:click="desativar({{ $p->id }})" class="table-action-btn" style="font-size:11px;color:{{ $p->ativo ? 'var(--warning)' : 'var(--success)' }};" title="{{ $p->ativo ? 'Desativar' : 'Ativar' }}"><i class="fas {{ $p->ativo ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button></td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="data-table-empty">Nenhum produto base encontrado. Cadastre o primeiro acima.</td></tr>
+                            <tr><td colspan="6" class="data-table-empty">Nenhum produto base encontrado.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div style="padding:8px 12px;border-top:1px solid var(--border);">
+                {{ $this->listagem()->links('livewire.tailwind-pagination') }}
             </div>
         </div>
     </div>
