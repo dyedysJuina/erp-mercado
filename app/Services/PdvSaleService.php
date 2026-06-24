@@ -193,6 +193,7 @@ class PdvSaleService
                 if ($item['stock']) {
                     $updated = DB::table('estoque_saldos')
                         ->where('id', $item['stock']->id)
+                        ->where('quantidade_atual', '>=', $item['quantity'])
                         ->decrement('quantidade_atual', $item['quantity']);
 
                     if ((int) $updated !== 1) {
@@ -346,7 +347,7 @@ class PdvSaleService
                 }
             }
 
-            if ($paymentSum !== $totalCents) {
+            if (abs($paymentSum - $totalCents) > 1) {
                 $this->fail('forma_pagamento_id', 'A soma dos pagamentos difere do total da venda.');
             }
 
@@ -379,6 +380,7 @@ class PdvSaleService
                 if ($item['stock']) {
                     $updated = DB::table('estoque_saldos')
                         ->where('id', $item['stock']->id)
+                        ->where('quantidade_atual', '>=', $item['quantity'])
                         ->decrement('quantidade_atual', $item['quantity']);
 
                     if ((int) $updated !== 1) {

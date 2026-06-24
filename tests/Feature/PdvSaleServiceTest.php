@@ -188,11 +188,11 @@ class PdvSaleServiceTest extends TestCase
         Livewire::test(VendaManager::class)
             ->set('passo', 'venda')
             ->set('loja_id', '1')
-            ->call('buscarPorCodigoBarras', " 7891234567890\r\n")
+            ->call('adicionarProdutoPorCodigo', " 7891234567890\r\n")
             ->assertSet('codigoBarrasLido', 'ok')
             ->assertSet('carrinho.0.variacao_id', 2)
             ->assertSet('carrinho.0.quantidade', '1.000')
-            ->call('buscarPorCodigoBarras', '7891234567890')
+            ->call('adicionarProdutoPorCodigo', '7891234567890')
             ->assertSet('carrinho.0.quantidade', '2.000')
             ->assertHasNoErrors('buscaProduto');
     }
@@ -202,9 +202,9 @@ class PdvSaleServiceTest extends TestCase
         Livewire::test(VendaManager::class)
             ->set('passo', 'venda')
             ->set('loja_id', '1')
-            ->call('buscarPorCodigoBarras', '0000000000000')
+            ->call('adicionarProdutoPorCodigo', '0000000000000')
             ->assertSet('codigoBarrasLido', 'nao_encontrado')
             ->assertSet('carrinho', [])
-            ->assertHasErrors('buscaProduto');
+            ->assertSet('buscaProduto', '0000000000000');
     }
 }

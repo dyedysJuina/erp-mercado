@@ -296,9 +296,11 @@ class VendaManager extends Component
 
         if ($barcode) {
             $this->adicionarProduto($barcode->produto_variacao_id);
+            $this->codigoBarrasLido = 'ok';
             return;
         }
 
+        $this->codigoBarrasLido = 'nao_encontrado';
         // Se não achou por código, busca por texto
         $this->buscaProduto = $codigo;
     }

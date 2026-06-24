@@ -10,11 +10,15 @@ class PdvVendaPagamento extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['venda_id', 'forma_pagamento_id', 'valor', 'parcelas'];
+    protected $fillable = ['venda_id', 'forma_pagamento_id', 'valor', 'parcelas', 'cancelado_at'];
 
     protected function casts(): array
     {
-        return ['valor' => 'decimal:2', 'parcelas' => 'integer'];
+        return [
+            'valor' => 'decimal:2',
+            'parcelas' => 'integer',
+            'cancelado_at' => 'datetime',
+        ];
     }
 
     public function formaPagamento()
