@@ -155,7 +155,7 @@
         <i class="fas fa-exclamation-triangle"></i>
         <span x-text="'Estoque baixo: ' + estoqueBaixoMsg + ' (' + estoqueBaixoQtd + ' un)'"></span>
     </div>
-    <div x-show="showScanner" style="position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;" @click.self="closeScanner()" x-cloak>
+    <div wire:ignore x-show="showScanner" style="position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;" @click.self="closeScanner()" x-cloak>
         <div style="background:#fff;border-radius:16px;padding:20px;max-width:400px;width:90%;text-align:center;">
             <p style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:12px;">Escaneie o código de barras</p>
             <div id="scanner-elem" style="width:100%;aspect-ratio:1;overflow:hidden;border-radius:12px;background:#000;"></div>
