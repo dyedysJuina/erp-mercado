@@ -75,6 +75,8 @@ class VendaManager extends Component
 
     public string $codigoBarrasLido = '';
 
+    public string $qtdBusca = '1';
+
     public array $carrinho = [];
 
     public string $desconto = '0,00';
@@ -252,9 +254,11 @@ class VendaManager extends Component
 
         if (!$result || !$result->preco_venda || $result->preco_venda <= 0) return;
 
+        $qtd = max(1, (int)$this->decimal($this->qtdBusca));
+
         $idx = array_search($variacaoId, array_column($this->carrinho, 'variacao_id'));
         if ($idx !== false) {
-            $this->carrinho[$idx]['quantidade'] += 1;
+            $this->carrinho[$idx]['quantidade'] += $qtd;
         } else {
             $codBarras = DB::table('produto_codigos_barras')
                 ->where('produto_variacao_id', $result->id)
@@ -271,11 +275,12 @@ class VendaManager extends Component
                 'codigo_barras' => $codBarras ?? '',
                 'foto_url' => $result->foto_url ?? '',
                 'preco' => (float)$result->preco_venda,
-                'quantidade' => 1,
+                'quantidade' => $qtd,
             ];
         }
         $this->buscaProduto = '';
         $this->codigoBarrasLido = '';
+        $this->qtdBusca = '1';
         $this->dispatch('produto-adicionado');
 
         if ($result && (float)$result->estoque_disponivel <= 3 && (float)$result->estoque_disponivel > 0) {

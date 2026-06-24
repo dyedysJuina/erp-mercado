@@ -102,7 +102,7 @@ function pdvApp() {
                 if (!window.isSecureContext) { this.scanError = 'Câmera exige HTTPS'; return; }
                 this.qr = new Html5Qrcode('scanner-elem');
                 this.qr.start({ facingMode: 'environment' }, { fps: 15, qrbox: { width: 250, height: 150 } },
-                    (texto) => { this.closeScanner(); this.$refs.searchInput.value = texto; this.$wire.call('adicionarProdutoPorCodigo', texto); }
+                    (texto) => { this.$refs.searchInput.value = texto; this.$wire.call('adicionarProdutoPorCodigo', texto); }
                 ).catch(e => { this.scanError = e.message; });
             });
         },

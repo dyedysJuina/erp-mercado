@@ -29,10 +29,15 @@
                     <input x-ref="searchInput" @input="scheduleSearch($el.value)" @keydown.enter.prevent="searchEnter()" type="text" placeholder="Código, nome ou escaneie..." style="flex:1;border:0;outline:none;font-size:13px;color:#0f172a;background:transparent;padding:4px 10px;">
                     <button type="button" @click="openScanner()" style="background:none;border:0;color:#64748b;cursor:pointer;font-size:16px;padding:4px;"><i class="fas fa-camera"></i></button>
                 </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+                    <span style="font-size:10px;font-weight:600;color:#64748b;">Qtd:</span>
+                    <input wire:model.live="qtdBusca" type="text" inputmode="numeric" 
+                           style="width:36px;text-align:center;padding:1px 4px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-weight:700;color:#0f172a;outline:none;">
+                </div>
                 @if (mb_strlen(trim($this->buscaProduto)) >= 2)
                     <div style="position:absolute;z-index:20;left:12px;right:12px;top:48px;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,0.15);">
                         @forelse ($this->resultadosProduto as $product)
-                            <button wire:click="adicionarProduto({{ $product['id'] }})" style="display:flex;align-items:center;gap:10px;width:100%;padding:6px 12px;border:0;border-bottom:1px solid var(--border);background:transparent;color:#0f172a;text-align:left;cursor:pointer;font-size:12px;min-height:48px;" @disabled($product['estoque_disponivel'] <= 0) @click="$refs.searchInput.focus()">
+                            <button wire:click="adicionarProduto({{ $product['id'] }})" style="display:flex;align-items:center;gap:10px;width:100%;padding:6px 12px;border:0;border-bottom:1px solid var(--border);background:transparent;color:#0f172a;text-align:left;cursor:pointer;font-size:12px;min-height:48px;" @disabled($product['estoque_disponivel'] <= 0) @click="if($refs.searchInput) { setTimeout(() => $refs.searchInput.focus(), 0); }">
                                 <img src="{{ $product['foto_url'] ? asset('storage/' . $product['foto_url']) : '' }}" 
                                      style="width:36px;height:36px;border-radius:6px;object-fit:cover;background:#f1f5f9;flex-shrink:0;{{ $product['foto_url'] ? '' : 'display:none;' }}"
                                      onerror="this.style.display='none'">
