@@ -48,18 +48,17 @@ class VitrineAuth extends Component
     {
         return [
             'login_email.required' => 'Informe seu e-mail.',
-            'login_email.email' => 'E-mail invalido.',
+            'login_email.email' => 'E-mail inválido.',
             'login_password.required' => 'Informe sua senha.',
-
             'reg_nome.required' => 'Informe seu nome.',
             'reg_email.required' => 'Informe seu e-mail.',
-            'reg_email.unique' => 'Este e-mail ja esta cadastrado.',
+            'reg_email.unique' => 'Este e-mail já está cadastrado.',
             'reg_whatsapp.required' => 'Informe seu WhatsApp.',
-            'reg_whatsapp.unique' => 'Este WhatsApp ja esta cadastrado.',
+            'reg_whatsapp.unique' => 'Este WhatsApp já está cadastrado.',
             'reg_password.required' => 'Crie uma senha.',
-            'reg_password.min' => 'Minimo 6 caracteres.',
+            'reg_password.min' => 'Mínimo 6 caracteres.',
             'reg_password_confirmation.required' => 'Confirme sua senha.',
-            'reg_password_confirmation.same' => 'As senhas nao conferem.',
+            'reg_password_confirmation.same' => 'As senhas não conferem.',
         ];
     }
 

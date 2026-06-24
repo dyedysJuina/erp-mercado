@@ -22,8 +22,6 @@ class PedidoListaManager extends Component
     public string $filtroFornecedor = '';
     public string $dataInicio = '';
     public string $dataFim = '';
-    public string $periodoRelatorio = 'mes';
-
     #[Computed]
     public function fornecedores(): array
     {

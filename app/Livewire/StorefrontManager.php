@@ -151,7 +151,6 @@ class StorefrontManager extends Component
                     'status_item' => 'pendente',
                 ]);
 
-                // Baixa estoque com lock e proteção de negativo
                 $saldo = EstoqueSaldo::where('loja_id', $this->lojaId)
                     ->where('produto_variacao_id', $item['variacao_id'])
                     ->lockForUpdate()
@@ -161,7 +160,6 @@ class StorefrontManager extends Component
                     $saldo->decrement('quantidade_atual', $item['quantidade']);
                 }
 
-                // Registra movimentação de estoque
                 DB::table('estoque_movimentacoes')->insert([
                     'loja_id' => $this->lojaId,
                     'produto_variacao_id' => $item['variacao_id'],
@@ -176,7 +174,6 @@ class StorefrontManager extends Component
                 ]);
             }
 
-            // Registra pagamento pendente
             \App\Models\PedidoPagamento::create([
                 'pedido_id' => $pedido,
                 'forma_pagamento_id' => $this->formaPagamentoId ?? 1,
@@ -184,9 +181,10 @@ class StorefrontManager extends Component
                 'valor' => $total,
             ]);
 
-            // Gera financeiro (receita pendente)
             $catReceita = \App\Models\FinanceiroCategoria::where('tipo', 'receita')
                 ->where('ativo', true)->orderBy('id')->value('id');
+            $prazoDias = \App\Models\FormaPagamento::where('id', $this->formaPagamentoId ?? 1)
+                ->value('prazo_recebimento_dias') ?? 7;
             FinanceiroLancamento::create([
                 'empresa_id' => \App\Models\Loja::where('id', $this->lojaId)->value('empresa_id') ?? 1,
                 'loja_id' => $this->lojaId,
@@ -197,23 +195,23 @@ class StorefrontManager extends Component
                 'descricao' => "Pedido #{$pedido} - {$this->clienteNome}",
                 'valor' => $total,
                 'data_competencia' => now(),
-                'data_vencimento' => now()->addDays(7),
+                'data_vencimento' => now()->addDays($prazoDias),
                 'status' => 'pendente',
             ]);
-        });
 
-        // Notificar administradores sobre novo pedido
-        $admins = \App\Models\User::where('ativo', true)->whereHas('roles', fn($q) => $q->where('name', 'Admin'))->pluck('id');
-        foreach ($admins as $uid) {
-            Notificacao::create([
-                'usuario_id' => $uid,
-                'canal' => 'sistema',
-                'titulo' => 'Novo Pedido Online',
-                'mensagem' => "Pedido #{$pedido} de {$this->clienteNome} - R$ " . number_format($total, 2, ',', '.'),
-                'link' => '/pedidos-online',
-                'status' => 'pendente',
-            ]);
-        }
+            // Notificar administradores (dentro da transação)
+            $admins = \App\Models\User::where('ativo', true)->whereHas('roles', fn($q) => $q->where('name', 'Admin'))->pluck('id');
+            foreach ($admins as $uid) {
+                \App\Models\Notificacao::create([
+                    'usuario_id' => $uid,
+                    'canal' => 'sistema',
+                    'titulo' => 'Novo Pedido Online',
+                    'mensagem' => "Pedido #{$pedido} de {$this->clienteNome} - R$ " . number_format($total, 2, ',', '.'),
+                    'link' => '/pedidos-online',
+                    'status' => 'pendente',
+                ]);
+            }
+        });
 
         $this->ultimoPedidoId = $pedido;
         $this->clienteNome = '';

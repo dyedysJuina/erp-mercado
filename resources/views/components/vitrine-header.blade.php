@@ -10,7 +10,7 @@
             </button>
 
             <a href="/vitrine" wire:navigate style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.10);text-decoration:none;margin-right:auto;margin-left:8px;">
-                Oferta<span style="color:#FFD700;font-weight:300;">X</span>
+                {{ config('app.name', 'OfertaX') }}
             </a>
 
             <button x-on:click="$dispatch('abrir-carrinho')" style="font-size:26px;color:#fff;background:rgba(255,255,255,0.12);width:48px;height:48px;border-radius:40px;display:flex;align-items:center;justify-content:center;transition:0.15s;text-decoration:none;position:relative;border:1px solid rgba(255,255,255,0.20);cursor:pointer;">
@@ -36,7 +36,7 @@
     {{-- MENU LATERAL --}}
     <nav x-show="menuOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" style="position:fixed;top:0;left:0;width:280px;max-width:82%;height:100vh;background:#fff;box-shadow:6px 0 30px rgba(0,0,0,0.10);z-index:999;padding:28px 24px 30px;display:flex;flex-direction:column;overflow-y:auto;border-right:3px solid #FFD700;" x-cloak>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;border-bottom:3px solid #FFD700;padding-bottom:16px;">
-            <span style="font-size:28px;font-weight:700;color:#6CC51D;">Oferta<span style="color:#FFD700;font-weight:300;">X</span></span>
+            <span style="font-size:28px;font-weight:700;color:#6CC51D;">{{ config('app.name', 'OfertaX') }}</span>
             <button x-on:click="menuOpen = false" style="background:#FFF9C4;border:1px solid #FFD700;width:40px;height:40px;border-radius:40px;font-size:24px;color:#6CC51D;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <i class="fas fa-times"></i>
             </button>
