@@ -644,7 +644,15 @@ class VendaManager extends Component
         }
 
         DB::transaction(function () use ($venda) {
+            $venda = PdvVenda::with('itens')->lockForUpdate()->find($venda->id);
+            if (!$venda || $venda->status !== 'concluida') {
+                $this->devMensagem = 'Venda não disponível.';
+                return;
+            }
+
             $totalDevolvido = 0;
+            $qtdTotalItens = $venda->itens->count();
+            $qtdDevolvidos = 0;
 
             $dev = PdvDevolucao::create([
                 'venda_id' => $venda->id,
@@ -655,10 +663,12 @@ class VendaManager extends Component
 
             foreach ($venda->itens as $item) {
                 if (in_array($item->id, $this->devItensSelecionados)) {
-                    $valUnit = (float) $item->preco_unitario;
                     $qtd = (float) $item->quantidade;
-                    $totalItem = $qtd * $valUnit;
+                    $valUnit = (float) $item->preco_unitario;
+                    $descItem = (float) $item->desconto;
+                    $totalItem = (float) $item->total_item;
                     $totalDevolvido += $totalItem;
+                    $qtdDevolvidos++;
 
                     PdvDevolucaoItem::create([
                         'devolucao_id' => $dev->id,
@@ -667,7 +677,8 @@ class VendaManager extends Component
                         'valor_unitario' => $valUnit,
                     ]);
 
-                    // Estorna estoque
+                    $item->update(['cancelado' => true]);
+
                     \App\Models\EstoqueSaldo::where('loja_id', (int)$this->loja_id)
                         ->where('produto_variacao_id', $item->produto_variacao_id)
                         ->increment('quantidade_atual', $qtd);
@@ -675,6 +686,8 @@ class VendaManager extends Component
                     \App\Models\EstoqueMovimentacao::create([
                         'loja_id' => (int)$this->loja_id,
                         'produto_variacao_id' => $item->produto_variacao_id,
+                        'origem_tipo' => 'pdv_devolucao',
+                        'origem_id' => $dev->id,
                         'tipo' => 'entrada_devolucao',
                         'quantidade' => $qtd,
                         'justificativa' => 'Devolução venda #' . $venda->id . ': ' . $this->devMotivo,
@@ -684,9 +697,27 @@ class VendaManager extends Component
             }
 
             $dev->update(['valor_total' => $totalDevolvido]);
+
+            \App\Models\FinanceiroLancamento::create([
+                'loja_id' => (int)$this->loja_id,
+                'tipo' => 'receita',
+                'descricao' => 'Devolução venda #' . $venda->id,
+                'valor' => -$totalDevolvido,
+                'data_competencia' => now(),
+                'data_vencimento' => now(),
+                'data_pagamento' => now(),
+                'status' => 'pago',
+                'pdv_venda_id' => $venda->id,
+            ]);
+
+            if ($qtdDevolvidos >= $qtdTotalItens) {
+                \App\Models\PdvVendaPagamento::where('venda_id', $venda->id)
+                    ->whereNull('cancelado_at')
+                    ->update(['cancelado_at' => now()]);
+            }
         });
 
-        $this->devMensagem = 'Devolução registrada com sucesso! Valor: R$ ' . number_format(collect($this->devVenda['itens'])->whereIn('id', $this->devItensSelecionados)->sum(fn($i) => $i['quantidade'] * $i['preco_unitario']), 2, ',', '.');
+        $this->devMensagem = 'Devolução registrada com sucesso! Valor: R$ ' . number_format(collect($this->devVenda['itens'])->whereIn('id', $this->devItensSelecionados)->sum(fn($i) => (float)$i['total_item']), 2, ',', '.');
         $this->devVenda = null;
         $this->devItensSelecionados = [];
         $this->devMotivo = '';
@@ -700,7 +731,7 @@ class VendaManager extends Component
             $this->addError('estornoMotivo', 'Informe o motivo do estorno.'); return;
         }
 
-        $venda = PdvVenda::find($this->vendaId);
+        $venda = PdvVenda::with('itens')->lockForUpdate()->find($this->vendaId);
         if (!$venda || $venda->status !== 'concluida') {
             $this->addError('estornoMotivo', 'Venda não pode ser estornada.');
             return;
@@ -709,23 +740,32 @@ class VendaManager extends Component
         DB::transaction(function () use ($venda) {
             $venda->update(['status' => 'cancelada']);
 
-            $items = \App\Models\PdvVendaItem::where('venda_id', $venda->id)->get();
-            foreach ($items as $item) {
+            foreach ($venda->itens as $item) {
                 if (!$item->cancelado) {
+                    $qtd = (float) $item->quantidade;
+
+                    $item->update(['cancelado' => true]);
+
                     \App\Models\EstoqueSaldo::where('loja_id', (int)$this->loja_id)
                         ->where('produto_variacao_id', $item->produto_variacao_id)
-                        ->increment('quantidade_atual', $item->quantidade);
+                        ->increment('quantidade_atual', $qtd);
 
                     \App\Models\EstoqueMovimentacao::create([
                         'loja_id' => (int)$this->loja_id,
                         'produto_variacao_id' => $item->produto_variacao_id,
+                        'origem_tipo' => 'pdv_venda',
+                        'origem_id' => $venda->id,
                         'tipo' => 'entrada_estorno',
-                        'quantidade' => $item->quantidade,
+                        'quantidade' => $qtd,
                         'justificativa' => 'Estorno venda #' . $venda->id . ': ' . $this->estornoMotivo,
                         'usuario_id' => auth()->id(),
                     ]);
                 }
             }
+
+            \App\Models\PdvVendaPagamento::where('venda_id', $venda->id)
+                ->whereNull('cancelado_at')
+                ->update(['cancelado_at' => now()]);
 
             \App\Models\FinanceiroLancamento::where('pdv_venda_id', $venda->id)
                 ->update(['status' => 'cancelado']);
