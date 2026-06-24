@@ -390,7 +390,7 @@ class ImportadorManager extends Component
         }
 
         $sku = $get('sku');
-        $slug = Str::slug($nome . ($sku ? '-' . $sku : '')) . '-' . time() . rand(100, 999);
+        $slug = Str::slug($nome . ($sku ? '-' . $sku : '')) . '-' . uniqid();
 
         // Create ProdutoBase
         $base = ProdutoBase::create([
@@ -406,7 +406,7 @@ class ImportadorManager extends Component
         ]);
 
         $nomeCompleto = $nome . ($marcaNome ? " {$marcaNome}" : '');
-        $slugVar = Str::slug($nomeCompleto . '-' . $sku) . '-' . time() . rand(100, 999);
+        $slugVar = Str::slug($nomeCompleto . '-' . $sku) . '-' . uniqid();
 
         $precoCusto = (float)str_replace([',', '.'], ['.', ''], $get('preco_custo') ?? '0');
         $precoVenda = (float)str_replace([',', '.'], ['.', ''], $get('preco_venda') ?? '0');

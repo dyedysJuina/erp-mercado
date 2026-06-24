@@ -136,7 +136,12 @@ class MarcaManager extends Component
 
         if ($this->duplicata) {
             $this->addError('slug', "Marca '{$this->nome}' já existe.");
+            return;
+        }
 
+        $dup = Marca::where('nome', $this->nome)->when($this->editandoId, fn($q) => $q->where('id', '!=', (int)$this->editandoId))->exists();
+        if ($dup) {
+            $this->addError('nome', "Já existe uma marca com o nome '{$this->nome}'.");
             return;
         }
 

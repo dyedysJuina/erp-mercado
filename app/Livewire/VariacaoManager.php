@@ -174,8 +174,11 @@ class VariacaoManager extends Component
     //  OPÇÕES
     // ═══════════════════════════════════════════════════
 
+    #[Computed]
     public function optsMarcas(): array { return Marca::where('ativo',true)->orderBy('nome')->get(['id','nome'])->toArray(); }
+    #[Computed]
     public function optsEmbalagens(): array { return Embalagem::where('ativo',true)->orderBy('nome')->get(['id','nome','sigla'])->toArray(); }
+    #[Computed]
     public function optsUnidades(): array { return UnidadeMedida::orderBy('nome')->get(['id','sigla','nome'])->toArray(); }
     public function optsTiposCodigo(): array { return ['ean13'=>'EAN-13','ean8'=>'EAN-8','dun14'=>'DUN-14','interno'=>'Interno','balanca'=>'Balança']; }
     public function optsTiposApresentacao(): array { return ['multipla'=>'Múltipla','venda'=>'Venda','compra'=>'Compra','estoque'=>'Estoque','fiscal'=>'Fiscal']; }
@@ -581,9 +584,15 @@ class VariacaoManager extends Component
         $v = ProdutoVariacao::findOrFail($id);
         $deps = [];
         if (DBFacade::table('precos_produtos_lojas')->where('produto_variacao_id', $id)->exists()) $deps[] = 'preços';
+        if (DBFacade::table('tabela_precos_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'tabela de preços';
         if (DBFacade::table('estoque_saldos')->where('produto_variacao_id', $id)->exists()) $deps[] = 'estoque';
-        if (DBFacade::table('pedidos_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'vendas';
+        if (DBFacade::table('pedidos_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'pedidos';
+        if (DBFacade::table('pdv_venda_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'vendas PDV';
         if (DBFacade::table('fiscal_documento_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'fiscal';
+        if (DBFacade::table('compras_pedido_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'compras';
+        if (DBFacade::table('compras_recebimento_itens')->where('produto_variacao_id', $id)->exists()) $deps[] = 'recebimentos';
+        if (DBFacade::table('ofertas_produtos')->where('produto_variacao_id', $id)->exists()) $deps[] = 'ofertas';
+        if (DBFacade::table('precos_historico')->where('produto_variacao_id', $id)->exists()) $deps[] = 'histórico de preços';
         if (!empty($deps)) { $this->addError('exclusao', 'Possui ' . implode(', ', $deps) . '. Inative em vez de excluir.'); return; }
 
         ProdutoCodigoBarras::where('produto_variacao_id', $id)->delete();

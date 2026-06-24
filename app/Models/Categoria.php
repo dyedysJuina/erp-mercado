@@ -75,6 +75,8 @@ class Categoria extends Model
             'caminho' => $caminho,
             'nivel' => $nivel,
         ]));
+
+        self::recalcularDescendentes($categoria->id);
     }
 
     public static function recalcularDescendentes(int $categoriaId): void
