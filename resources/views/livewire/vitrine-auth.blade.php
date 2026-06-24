@@ -45,7 +45,7 @@
                     <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;color:var(--text);">
                         <input type="checkbox" style="accent-color:var(--primary-500);width:15px;height:15px;"> Lembrar-me
                     </label>
-                    <a href="#" style="font-size:0.82rem;font-weight:500;color:var(--primary-500);text-decoration:none;">Esqueceu a senha?</a>
+                    <span style="font-size:0.82rem;font-weight:500;color:var(--muted);">Entre em contato pelo WhatsApp para redefinir sua senha.</span>
                 </div>
 
                 <button type="submit" wire:loading.attr="disabled" wire:target="entrar"

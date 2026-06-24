@@ -12,8 +12,17 @@ Route::get('/login', Login::class)->name('login')->middleware('guest');
 Route::get('/loja', \App\Livewire\StorefrontManager::class)->name('loja');
 Route::get('/vitrine', \App\Livewire\StorefrontManager::class)->name('vitrine');
 
-Route::get('/vitrine/auth', \App\Livewire\VitrineAuth::class)->name('vitrine.auth');
+Route::get('/vitrine/auth', \App\Livewire\VitrineAuth::class)->name('vitrine.auth')->middleware('throttle:10,1');
 Route::get('/vitrine/minha-conta', \App\Livewire\ClienteContaManager::class)->name('vitrine.minha-conta')->middleware('cliente.auth');
+Route::get('/vitrine/pedidos', \App\Livewire\ClienteContaManager::class)->name('vitrine.pedidos')->middleware('cliente.auth');
+Route::get('/vitrine/meus-pedidos', \App\Livewire\ClienteContaManager::class)->name('vitrine.meus-pedidos')->middleware('cliente.auth');
+Route::get('/vitrine/ofertas', \App\Livewire\StorefrontManager::class)->name('vitrine.ofertas');
+Route::get('/vitrine/favoritos', function () {
+    return redirect('/vitrine');
+})->name('vitrine.favoritos');
+Route::get('/vitrine/atendimento', function () {
+    return '<div style="font-family:sans-serif;text-align:center;padding:40px"><h2>Atendimento</h2><p>Em breve.</p><a href="/vitrine">Voltar</a></div>';
+})->name('vitrine.atendimento');
 Route::get('/vitrine/logout', function () {
     session()->forget(['cliente_id', 'cliente_nome']);
     return redirect('/vitrine');
