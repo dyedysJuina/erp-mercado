@@ -19,7 +19,6 @@ class PedidoOnlineDetalheManager extends Component
         $this->pedidoId = $id;
     }
 
-    #[Computed]
     public function pedido(): ?Pedido
     {
         return Pedido::with(['cliente', 'itens.variacao.unidadeMedida', 'pagamentos.formaPagamento', 'separador', 'entregador'])
@@ -94,7 +93,6 @@ class PedidoOnlineDetalheManager extends Component
             }
         });
 
-        $this->forgetComputed('pedido');
         $this->toast("Status alterado para '{$status}'!");
     }
 

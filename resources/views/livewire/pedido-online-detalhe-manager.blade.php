@@ -4,7 +4,7 @@
          x-show="show" class="toast-fixed" x-cloak>
         <span class="toast-icon"><i class="fas fa-check"></i></span><span x-text="msg"></span>
     </div>
-    @php $p = $this->pedido; @endphp
+    @php $p = $this->pedido(); @endphp
     <div class="main-content-pad">
         @if (!$p)
             <div style="text-align:center;padding:60px;color:var(--muted);">Pedido não encontrado.</div>
