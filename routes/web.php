@@ -81,6 +81,8 @@ Route::middleware('auth')->group(function () {
     $r('/financeiro', \App\Livewire\FinanceiroManager::class, 'financeiro');
     $r('/financeiro/conciliacao', \App\Livewire\ConciliacaoManager::class, 'financeiro.conciliacao');
     $r('/lotes', \App\Livewire\LoteManager::class, 'lotes');
+    Route::get('/separacao', \App\Livewire\SeparacaoListaManager::class)->name('separacao')->middleware(['auth', 'permission:pedidos']);
+    Route::get('/separacao/{id}', \App\Livewire\SeparacaoManager::class)->name('separacao.item')->middleware(['auth', 'permission:pedidos']);
     $r('/relatorios', \App\Livewire\RelatorioManager::class, 'relatorios');
     $r('/admin/temas', \App\Livewire\Admin\ThemeEditor::class, 'admin.themes', 'admin.temas');
     $r('/admin/fiscal', \App\Livewire\Admin\FiscalConfigManager::class, 'admin.fiscal');

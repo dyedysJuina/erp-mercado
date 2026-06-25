@@ -1,0 +1,112 @@
+<div>
+    <div x-data="{ show: @entangle('toastShow'), msg: @entangle('toastMsg') }"
+         x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
+         x-show="show" class="toast-fixed" x-cloak>
+        <span class="toast-icon"><i class="fas fa-check"></i></span><span x-text="msg"></span>
+    </div>
+    <div style="max-width:480px;margin:0 auto;background:var(--surface);min-height:100vh;">
+        {{-- HEADER --}}
+        <header style="background:var(--text);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-box" style="color:var(--warning);font-size:18px;"></i>
+                <span style="font-weight:800;font-size:16px;letter-spacing:1px;">SEPARACAO</span>
+            </div>
+            <span style="background:var(--primary-600);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;">
+                <i class="fas fa-bell" style="margin-right:4px;"></i> {{ $this->totalPendentes }} pend.
+            </span>
+        </header>
+
+        {{-- BUSCA --}}
+        <div style="padding:12px 16px;background:color-mix(in srgb,var(--text)4%,transparent);border-bottom:1px solid var(--border);">
+            <div style="position:relative;display:flex;align-items:center;">
+                <i class="fas fa-search" style="position:absolute;left:12px;color:var(--muted);font-size:13px;"></i>
+                <input wire:model.live.debounce.300ms="busca" placeholder="Buscar pedido, cliente ou ID..." style="width:100%;padding:10px 12px 10px 36px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;background:#fff;">
+            </div>
+        </div>
+
+        {{-- LISTA --}}
+        <div style="padding:12px 16px;">
+            @php $dados = $this->pendentes; @endphp
+
+            @if (!empty($dados['atrasados']))
+                <div style="margin-bottom:20px;">
+                    <h3 style="font-size:10px;font-weight:800;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></span> Atrasados ({{ count($dados['atrasados']) }})
+                    </h3>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        @foreach ($dados['atrasados'] as $p)
+                            <a href="/separacao/{{ $p['id'] }}" wire:navigate style="text-decoration:none;color:inherit;display:block;background:#fff;border-left:4px solid var(--danger);border-radius:0 12px 12px 0;border:1px solid var(--border);border-left-color:var(--danger);padding:14px;">
+                                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                                    <div>
+                                        <span style="font-size:11px;font-weight:700;color:var(--muted);">#{{ $p['id'] }}</span>
+                                        <h4 style="margin:0;font-weight:700;font-size:15px;color:var(--text);">{{ $p['cliente_nome'] }}</h4>
+                                    </div>
+                                    <span style="font-size:11px;color:var(--danger);font-weight:600;display:flex;align-items:center;gap:4px;background:color-mix(in srgb,var(--danger)8%,transparent);padding:2px 8px;border-radius:20px;">
+                                        <i class="far fa-clock"></i> {{ $p['minutos_atraso'] }}min
+                                    </span>
+                                </div>
+                                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+                                    <i class="fas fa-shopping-cart" style="margin-right:4px;"></i> {{ $p['total_itens'] }} itens · <strong style="color:var(--text);">R$ {{ number_format($p['total'], 2, ',', '.') }}</strong>
+                                </div>
+                                <div style="margin-bottom:10px;">
+                                    <div style="height:6px;border-radius:3px;background:color-mix(in srgb,var(--text)8%,transparent);overflow:hidden;">
+                                        <div style="height:100%;border-radius:3px;width:{{ $p['progresso'] }}%;background:var(--danger);transition:width 0.3s;"></div>
+                                    </div>
+                                    <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">{{ $p['progresso'] }}% ({{ $p['total_separados'] }}/{{ $p['total_itens'] }})</div>
+                                </div>
+                                <button style="width:100%;padding:10px;border:0;border-radius:8px;background:var(--text);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">
+                                    <i class="fas {{ $p['ja_iniciou'] ? 'fa-forward' : 'fa-play' }}" style="color:var(--warning);margin-right:6px;"></i>
+                                    {{ $p['ja_iniciou'] ? 'Continuar' : 'Iniciar' }} Separacao
+                                </button>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if (!empty($dados['normais']))
+                <div>
+                    <h3 style="font-size:10px;font-weight:800;color:var(--primary-600);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:var(--primary-600);"></span> Pendentes ({{ count($dados['normais']) }})
+                    </h3>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        @foreach ($dados['normais'] as $p)
+                            <a href="/separacao/{{ $p['id'] }}" wire:navigate style="text-decoration:none;color:inherit;display:block;background:#fff;border-left:4px solid var(--primary-600);border-radius:0 12px 12px 0;border:1px solid var(--border);border-left-color:var(--primary-600);padding:14px;">
+                                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;">
+                                    <div>
+                                        <span style="font-size:11px;font-weight:700;color:var(--muted);">#{{ $p['id'] }}</span>
+                                        <h4 style="margin:0;font-weight:700;font-size:15px;color:var(--text);">{{ $p['cliente_nome'] }}</h4>
+                                    </div>
+                                    <span style="font-size:11px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:4px;background:color-mix(in srgb,var(--text)6%,transparent);padding:2px 8px;border-radius:20px;">
+                                        <i class="far fa-clock"></i> {{ $p['minutos_atraso'] }}min
+                                    </span>
+                                </div>
+                                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+                                    <i class="fas fa-shopping-cart" style="margin-right:4px;"></i> {{ $p['total_itens'] }} itens · <strong style="color:var(--text);">R$ {{ number_format($p['total'], 2, ',', '.') }}</strong>
+                                </div>
+                                <div style="margin-bottom:10px;">
+                                    <div style="height:6px;border-radius:3px;background:color-mix(in srgb,var(--text)8%,transparent);overflow:hidden;">
+                                        <div style="height:100%;border-radius:3px;width:{{ $p['progresso'] }}%;background:var(--primary-600);transition:width 0.3s;"></div>
+                                    </div>
+                                    <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">{{ $p['progresso'] }}% ({{ $p['total_separados'] }}/{{ $p['total_itens'] }})</div>
+                                </div>
+                                <button style="width:100%;padding:10px;border:0;border-radius:8px;background:var(--text);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">
+                                    <i class="fas {{ $p['ja_iniciou'] ? 'fa-forward' : 'fa-play' }}" style="color:var(--warning);margin-right:6px;"></i>
+                                    {{ $p['ja_iniciou'] ? 'Continuar' : 'Iniciar' }} Separacao
+                                </button>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if (empty($dados['atrasados']) && empty($dados['normais']))
+                <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+                    <i class="fas fa-box-open" style="font-size:40px;margin-bottom:12px;opacity:0.3;display:block;"></i>
+                    <p style="font-weight:600;color:var(--text);margin:0 0 4px;">Nenhum pedido para separar</p>
+                    <p style="font-size:13px;margin:0;">Novos pedidos aparecerao aqui.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
