@@ -206,7 +206,14 @@ class PedidoDetalheManager extends Component
         $this->toast('Recebimento confirmado com sucesso!');
     }
 
+    public bool $enviarModalOpen = false;
+
     public function enviar(): void
+    {
+        $this->enviarModalOpen = true;
+    }
+
+    public function confirmarEnvio(): void
     {
         $p = $this->pedido;
         if ($p && $p->status === 'rascunho') {
@@ -219,7 +226,7 @@ class PedidoDetalheManager extends Component
                 'updated_at' => now(),
             ]);
             $p->update(['status' => 'enviado']);
-            $this->toast('Pedido marcado como enviado!');
+            $this->enviarModalOpen = false;
         }
     }
 

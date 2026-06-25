@@ -52,8 +52,8 @@
                     <button wire:click="enviar" class="btn-sm btn-primary" style="padding:8px 16px;font-size:12px;"><i class="fas fa-paper-plane"></i> Marcar Enviado</button>
                 @endif
                 @if (in_array($p->status, ['enviado', 'parcialmente_recebido', 'recebido']))
-                    <a href="/pedidos/{{ $p->id }}/pdf" target="_blank" class="btn-sm btn-secondary" style="padding:8px 16px;font-size:12px;text-decoration:none;">
-                        <i class="fas fa-print"></i> Imprimir
+                    <a href="{{ route('pedidos.pdf', $p->id) }}" class="btn-sm btn-secondary" style="padding:8px 16px;font-size:12px;text-decoration:none;">
+                        <i class="fas fa-file-pdf"></i> Baixar PDF
                     </a>
                 @endif
             </div>
@@ -237,5 +237,25 @@
                 </div>
             </div>
         @endif
+    </div>
+
+    {{-- ENVIAR MODAL --}}
+    <div x-data="{ open: $wire.entangle('enviarModalOpen') }" x-show="open" x-cloak style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:var(--surface);border-radius:16px;border:1px solid var(--border);width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);padding:24px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:12px;">📨</div>
+            <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;color:var(--text);">Enviar Pedido #{{ $p->id }}</h3>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">O pedido será marcado como enviado. Deseja baixar o PDF para enviar ao fornecedor?</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" wire:click="$set('enviarModalOpen', false)" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-weight:700;color:var(--text);font-size:13px;min-width:120px;">Cancelar</button>
+                <a href="{{ route('pedidos.pdf', $p->id) }}"
+                   onclick="event.preventDefault(); window.location.href=this.href; setTimeout(() => window.Livewire.find('{{ $this->getId() }}').call('confirmarEnvio'), 500);"
+                   style="flex:1;padding:10px;border:0;border-radius:8px;background:var(--primary-600);color:#fff;text-decoration:none;font-weight:800;font-size:13px;cursor:pointer;min-width:120px;display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fas fa-file-pdf"></i> Baixar PDF e Enviar
+                </a>
+                <button wire:click="confirmarEnvio" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-weight:700;color:var(--text);font-size:13px;min-width:120px;">
+                    Apenas Marcar Enviado
+                </button>
+            </div>
+        </div>
     </div>
 </div>
