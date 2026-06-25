@@ -43,13 +43,22 @@ class SeparacaoListaManager extends Component
             $minutos = $p->created_at->diffInMinutes($agora);
             $atrasado = $minutos > 30 && !in_array($p->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado']);
 
+            if ($minutos < 60) {
+                $tempo = $minutos . 'min';
+            } elseif ($minutos < 1440) {
+                $tempo = round($minutos / 60) . 'h';
+            } else {
+                $tempo = round($minutos / 1440) . 'd';
+            }
+
             $data = [
                 'id' => $p->id, 'codigo' => $p->codigo,
                 'cliente_nome' => $p->cliente?->nome ?? '—',
                 'cliente_whatsapp' => $p->cliente?->whatsapp ?? '',
                 'total_itens' => $totalItens, 'total_separados' => $separados,
                 'progresso' => $pct, 'total' => (float)$p->total,
-                'minutos_atraso' => $minutos, 'status' => $p->status,
+                'minutos_atraso' => $minutos, 'tempo_atraso' => $tempo,
+                'status' => $p->status,
                 'ja_iniciou' => $p->status === 'em_separacao',
             ];
 
@@ -65,6 +74,21 @@ class SeparacaoListaManager extends Component
         return Pedido::where('origem', 'site')
             ->whereIn('status', ['recebido', 'confirmado', 'em_separacao'])
             ->count();
+    }
+
+    public function cancelarPedido(int $id): void
+    {
+        $pedido = Pedido::find($id);
+        if (!$pedido) return;
+
+        if (in_array($pedido->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado'])) {
+            $this->toast('Pedido já finalizado ou cancelado.');
+            return;
+        }
+
+        $pedido->update(['status' => 'cancelado']);
+        $pedido->itens()->update(['status_item' => 'cancelado']);
+        $this->toast('Pedido #' . $id . ' cancelado.');
     }
 
     public function toast(string $msg): void

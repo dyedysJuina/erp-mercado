@@ -48,19 +48,16 @@ class SeparacaoManager extends Component
         return $this->itens[$this->itemAtual] ?? null;
     }
 
-    #[Computed]
     public function pedido(): ?Pedido
     {
         return Pedido::with('cliente')->find($this->pedidoId);
     }
 
-    #[Computed]
     public function itensRestantes(): int
     {
         return count($this->itens) - $this->itemAtual;
     }
 
-    #[Computed]
     public function progresso(): array
     {
         $total = count($this->itens);
@@ -114,7 +111,6 @@ class SeparacaoManager extends Component
         $item = $this->itens[$this->itemAtual] ?? null;
         if (!$item) return;
 
-        // Salva no banco
         PedidoItem::where('id', $item['id'])->update([
             'status_item' => $item['status'] ?: ($item['qtd_separada'] > 0 ? 'separado' : 'faltou'),
             'quantidade_separada' => $item['qtd_separada'],
@@ -125,7 +121,6 @@ class SeparacaoManager extends Component
         $this->processados[] = $item;
         $this->itemAtual++;
 
-        // Se acabaram os itens, atualiza o status do pedido
         if ($this->itemAtual >= count($this->itens)) {
             $pedido = Pedido::find($this->pedidoId);
             if ($pedido && $pedido->status === 'recebido') {
@@ -141,7 +136,6 @@ class SeparacaoManager extends Component
 
     public function finalizarSeparacao()
     {
-        // Processa itens restantes
         for ($i = $this->itemAtual; $i < count($this->itens); $i++) {
             $item = $this->itens[$i];
             PedidoItem::where('id', $item['id'])->update([

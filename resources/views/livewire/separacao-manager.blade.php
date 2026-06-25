@@ -4,10 +4,10 @@
          x-show="show" class="toast-fixed" x-cloak>
         <span class="toast-icon"><i class="fas fa-check"></i></span><span x-text="msg"></span>
     </div>
-    @php $p = $this->pedido; $item = $this->item; $prog = $this->progresso; @endphp
+    @php $p = $this->pedido(); $item = $this->item; $prog = $this->progresso(); @endphp
     <div style="max-width:480px;margin:0 auto;background:color-mix(in srgb,var(--text)4%,transparent);min-height:100vh;display:flex;flex-direction:column;">
         {{-- HEADER --}}
-        <header style="background:#fff;border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+        <header style="background:var(--header-bg);color:var(--text);border-bottom:1px solid var(--header-border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
             <a href="/separacao" wire:navigate style="color:var(--text);text-decoration:none;font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px;">
                 <i class="fas fa-chevron-left"></i> Voltar
             </a>
@@ -31,7 +31,7 @@
                         <p style="font-size:13px;color:var(--muted);">Pedido #{{ $this->pedidoId }} — {{ $p?->cliente?->nome ?? '' }}</p>
                     </div>
 
-                    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
                         @forelse ($this->processados as $pr)
                             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--text)6%,transparent);font-size:12px;">
                                 <div>
@@ -60,7 +60,7 @@
                 </div>
 
                 <div>
-                    <button wire:click="finalizarSeparacao" style="width:100%;padding:14px;border:0;border-radius:10px;background:var(--success);color:#fff;font-weight:800;font-size:15px;cursor:pointer;">
+                    <button wire:click="finalizarSeparacao" style="width:100%;padding:14px;border:0;border-radius:10px;background:var(--success);color:var(--on-success);font-weight:800;font-size:15px;cursor:pointer;">
                         <i class="fas fa-check-double" style="margin-right:6px;"></i> Confirmar e Finalizar
                     </button>
                     <a href="/separacao" wire:navigate style="display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--muted);text-decoration:none;">Voltar para lista</a>
@@ -80,7 +80,7 @@
                 </div>
 
                 {{-- ITEM CARD --}}
-                <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;">
                     <div style="display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--warning)10%,transparent);color:var(--warning);padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:12px;">
                         <i class="fas fa-map-pin"></i> <span id="prod-localizacao">Corredor —</span>
                     </div>
@@ -94,9 +94,9 @@
                             <div style="font-size:20px;font-weight:900;color:var(--text);">{{ number_format($item['qtd_pedido'], 0, ',', '.') }} un</div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
-                            <button wire:click="decrementar" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;">−</button>
+                            <button wire:click="decrementar" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;">−</button>
                             <input type="number" wire:model.blur="itens.{{ $this->itemAtual }}.qtd_separada" style="width:50px;height:36px;text-align:center;border:1px solid var(--primary-600);border-radius:8px;font-size:16px;font-weight:800;outline:none;">
-                            <button wire:click="incrementar" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;">+</button>
+                            <button wire:click="incrementar" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;">+</button>
                         </div>
                     </div>
 
@@ -120,8 +120,8 @@
 
                 {{-- ACTIONS --}}
                 <div style="display:flex;gap:8px;margin-top:auto;">
-                    <button wire:click="pularItem" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-weight:700;font-size:13px;color:var(--text);">Pular</button>
-                    <button wire:click="confirmarProximo" style="flex:1;padding:12px;border:0;border-radius:10px;background:var(--success);color:#fff;cursor:pointer;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px;">
+                    <button wire:click="pularItem" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;font-weight:700;font-size:13px;color:var(--text);">Pular</button>
+                    <button wire:click="confirmarProximo" style="flex:1;padding:12px;border:0;border-radius:10px;background:var(--success);color:var(--on-success);cursor:pointer;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px;">
                         Confirmar <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>

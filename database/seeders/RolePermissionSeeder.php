@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             'dashboard', 'categorias', 'atributos', 'unidades', 'embalagens', 'marcas',
             'produtos-base', 'variacoes', 'clientes', 'fornecedores',
-            'compras', 'pedidos', 'estoque', 'lotes', 'precos', 'lojas',
+            'compras', 'pedidos', 'separacao', 'estoque', 'lotes', 'precos', 'lojas',
             'ofertas',
             'pdv', 'financeiro', 'relatorios',
             'admin.temas', 'admin.fiscal', 'admin.gerencial',
@@ -42,7 +42,12 @@ class RolePermissionSeeder extends Seeder
             'dashboard', 'clientes', 'pdv', 'estoque',
         ]);
 
+        $separador = Role::firstOrCreate(['name' => 'Separador', 'guard_name' => 'web']);
+        $separador->syncPermissions([
+            'dashboard', 'pedidos', 'separacao', 'estoque',
+        ]);
+
         $this->command->info('✅ ' . count($permissions) . ' permissões criadas.');
-        $this->command->info('✅ 3 papéis criados: Admin, Supervisor, Operador');
+        $this->command->info('✅ 4 papéis criados: Admin, Supervisor, Operador, Separador');
     }
 }
