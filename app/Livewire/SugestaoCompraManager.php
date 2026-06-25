@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Categoria;
 use App\Models\Loja;
+use App\Models\CompraPedidoItem;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
@@ -27,6 +28,49 @@ class SugestaoCompraManager extends Component
     public ?int $pedidoCriado = null;
     public string $toastMsg = '';
     public bool $toastShow = false;
+
+    public bool $historicoModalOpen = false;
+    public array $historicoDados = [];
+    public string $historicoProdutoNome = '';
+
+    public function verHistorico(int $variacaoId, string $nome): void
+    {
+        $this->historicoProdutoNome = $nome;
+        $ultimos = CompraPedidoItem::with('pedido')
+            ->where('produto_variacao_id', $variacaoId)
+            ->whereHas('pedido', fn($q) => $q->where('status', '!=', 'cancelado'))
+            ->orderBy('created_at', 'desc')
+            ->limit(8)
+            ->get();
+
+        $this->historicoDados = $ultimos->map(fn($i) => [
+            'pedido_id' => $i->compra_pedido_id,
+            'data' => $i->created_at?->format('d/m/Y') ?? '—',
+            'quantidade' => (float)$i->quantidade_pedida,
+            'preco' => (float)$i->custo_unitario,
+        ])->toArray();
+
+        // Also add from precos_historico
+        $histPreco = DB::table('precos_historico')
+            ->where('produto_variacao_id', $variacaoId)
+            ->where('loja_id', (int)$this->lojaFiltro)
+            ->orderBy('created_at', 'desc')
+            ->limit(8)
+            ->get();
+
+        foreach ($histPreco as $h) {
+            $this->historicoDados[] = [
+                'pedido_id' => null,
+                'data' => $h->created_at ? date('d/m/Y', strtotime($h->created_at)) : '—',
+                'quantidade' => 0,
+                'preco' => (float)$h->preco_novo,
+            ];
+        }
+
+        usort($this->historicoDados, fn($a, $b) => strtotime(str_replace('/', '-', $b['data'])) - strtotime(str_replace('/', '-', $a['data'])));
+        $this->historicoDados = array_slice($this->historicoDados, 0, 10);
+        $this->historicoModalOpen = true;
+    }
 
     public function mount(): void
     {
@@ -187,6 +231,18 @@ class SugestaoCompraManager extends Component
             )->get()->keyBy('id');
 
         $resultado = [];
+        $ultimosPrecos = [];
+        if ($this->lojaFiltro) {
+            $ultimosPrecos = CompraPedidoItem::select('produto_variacao_id', 'custo_unitario', 'compra_pedido_id')
+                ->whereIn('produto_variacao_id', $variacaoIds)
+                ->whereHas('pedido', fn($q) => $q->where('status', '!=', 'cancelado'))
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy('produto_variacao_id')
+                ->map(fn($g) => ['preco' => (float)$g->first()->custo_unitario, 'pedido_id' => $g->first()->compra_pedido_id])
+                ->toArray();
+        }
+
         foreach ($vendas as $variacaoId => $qtdTotal) {
             $prod = $produtos->get($variacaoId);
             if (!$prod) continue;
@@ -200,10 +256,21 @@ class SugestaoCompraManager extends Component
             $diasAteZero = $vendaMediaDiaria > 0 ? floor($estoqueAtual / $vendaMediaDiaria) : 999;
             $sugestao = max(0, ceil(($vendaMediaDiaria * ($leadTime + 7)) - $estoqueAtual + $estoqueMin));
 
+            $ultimo = $ultimosPrecos[$variacaoId] ?? null;
+            $ultimoPreco = $ultimo['preco'] ?? 0;
+            $pedidoUltimo = $ultimo['pedido_id'] ?? null;
+            $custoAtual = (float)($prod->preco_custo ?? 0);
+            $variacaoPct = $ultimoPreco > 0 && $custoAtual > 0
+                ? round(($custoAtual - $ultimoPreco) / $ultimoPreco * 100, 1)
+                : 0;
+
             $resultado[] = [
                 'variacao_id' => $variacaoId, 'nome' => $prod->nome_completo, 'sku' => $prod->sku,
                 'categoria_id' => $prod->categoria_id, 'categoria' => $prod->categoria,
-                'custo' => (float)($prod->preco_custo ?? 0),
+                'custo' => $custoAtual,
+                'ultimo_preco' => $ultimoPreco,
+                'ultimo_pedido' => $pedidoUltimo,
+                'variacao_pct' => $variacaoPct,
                 'venda_media' => round($vendaMediaDiaria, 3),
                 'estoque_atual' => $estoqueAtual, 'estoque_min' => $estoqueMin,
                 'dias_ate_zero' => $diasAteZero, 'sugestao' => $sugestao,
@@ -230,10 +297,14 @@ class SugestaoCompraManager extends Component
         $itens = $this->sugestoes();
         $criticos = collect($itens)->where('urgencia', 'critica');
         $media = collect($itens)->where('urgencia', 'media');
+        $subiram = collect($itens)->filter(fn($i) => $i['variacao_pct'] > 0);
+        $cairam = collect($itens)->filter(fn($i) => $i['variacao_pct'] < 0);
         return [
             'total' => count($itens),
             'criticos' => $criticos->count(),
             'media' => $media->count(),
+            'subiram' => $subiram->count(),
+            'cairam' => $cairam->count(),
             'sugestao_total' => collect($itens)->sum('sugestao'),
             'custo_total' => collect($itens)->sum(fn($i) => $i['custo'] * $i['sugestao']),
         ];
