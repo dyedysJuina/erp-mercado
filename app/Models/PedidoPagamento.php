@@ -27,4 +27,9 @@ class PedidoPagamento extends Model
     {
         return $this->belongsTo(Pedido::class, 'pedido_id');
     }
+
+    public function formaPagamento()
+    {
+        return $this->belongsTo(FormaPagamento::class, 'forma_pagamento_id');
+    }
 }
