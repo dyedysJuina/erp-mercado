@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\ClientesEndereco;
 use App\Models\Estado;
 use App\Support\BrazilianNumber;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
@@ -147,6 +148,69 @@ class ClienteManager extends Component
     public function estados(): array
     {
         return \App\Models\Estado::orderBy('uf')->get(['id', 'uf', 'nome'])->toArray();
+    }
+
+    #[Computed]
+    public function resumoCliente(): array
+    {
+        if (!$this->editandoId) return [];
+        $cliente = Cliente::find($this->editandoId);
+        if (!$cliente) return [];
+
+        $pdvQ = \App\Models\PdvVenda::where('cliente_id', $this->editandoId)->where('status', 'concluida');
+        $totalVendas = (float) $pdvQ->sum('total');
+        $qtdVendas = $pdvQ->count();
+        $primeiraVenda = $pdvQ->orderBy('created_at')->value('created_at');
+        $ultimaVenda = $pdvQ->orderBy('created_at', 'desc')->value('created_at');
+
+        $pedidoQ = \App\Models\Pedido::where('cliente_id', $this->editandoId)->whereIn('status', ['entregue', 'recebido']);
+        $totalPedidos = (float) $pedidoQ->sum('total');
+        $qtdPedidos = $pedidoQ->count();
+        $ultimoPedido = $pedidoQ->orderBy('created_at', 'desc')->value('created_at');
+
+        $totalGasto = $totalVendas + $totalPedidos;
+        $totalCompras = $qtdVendas + $qtdPedidos;
+        $ticketMedio = $totalCompras > 0 ? $totalGasto / $totalCompras : 0;
+
+        $ultima = $ultimaVenda ?? $ultimoPedido;
+        $diasUltimaCompra = $ultima ? now()->diffInDays($ultima) : null;
+
+        $primeira = $primeiraVenda ?? $ultimoPedido;
+        $diasDesdeCadastro = $primeira ? now()->diffInDays($primeira) : null;
+        $frequencia = $diasDesdeCadastro && $diasDesdeCadastro > 0 && $totalCompras > 0
+            ? round($totalCompras / ($diasDesdeCadastro / 30), 1) : 0;
+
+        $gastoMensal = $diasDesdeCadastro && $diasDesdeCadastro > 0
+            ? round($totalGasto / ($diasDesdeCadastro / 30), 2) : 0;
+
+        if ($totalCompras === 0) $classificacao = 'novo';
+        elseif ($gastoMensal >= 800) $classificacao = 'top';
+        elseif ($gastoMensal >= 200) $classificacao = 'medio';
+        else $classificacao = 'ocasional';
+
+        $favoritos = \App\Models\PdvVendaItem::select('produto_variacao_id', DB::raw('SUM(quantidade) as total'))
+            ->join('pdv_vendas', 'pdv_vendas.id', '=', 'pdv_venda_itens.venda_id')
+            ->where('pdv_vendas.cliente_id', $this->editandoId)
+            ->where('pdv_vendas.status', 'concluida')
+            ->groupBy('produto_variacao_id')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->with('variacao')
+            ->get()
+            ->map(fn($i) => ['nome' => $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}", 'qtd' => (float)$i->total])
+            ->toArray();
+
+        return [
+            'total_gasto' => $totalGasto,
+            'total_compras' => $totalCompras,
+            'ticket_medio' => $ticketMedio,
+            'gasto_mensal' => $gastoMensal,
+            'frequencia' => $frequencia,
+            'ultima_compra' => $ultima,
+            'dias_ultima_compra' => $diasUltimaCompra,
+            'classificacao' => $classificacao,
+            'favoritos' => $favoritos,
+        ];
     }
 
     #[Computed]

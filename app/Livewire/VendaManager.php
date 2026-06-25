@@ -352,6 +352,25 @@ class VendaManager extends Component
         }
     }
 
+    public function selecionarClientePorCpf(string $cpf): void
+    {
+        $cpf = preg_replace('/\D/', '', $cpf);
+        if (strlen($cpf) < 11) return;
+
+        $cliente = Cliente::where('cpf', $cpf)->first();
+        if (!$cliente) {
+            $cliente = Cliente::create([
+                'nome' => 'Cliente ' . substr($cpf, -4),
+                'cpf' => $cpf,
+                'ativo' => true,
+            ]);
+            $this->toast('Novo cliente cadastrado pelo CPF!');
+        }
+
+        $this->cliente_id = (string)$cliente->id;
+        $this->clienteNome = $cliente->nome;
+    }
+
     public function irPagamento(): void
     {
         if (empty($this->carrinho)) return;
@@ -944,6 +963,54 @@ class VendaManager extends Component
             ->sum('valor');
         $total = $this->total;
         return max(0, $totalDinheiro - $total);
+    }
+
+    #[Computed]
+    public function dadosClientePdv(): ?array
+    {
+        if (!$this->cliente_id) return null;
+        $cliente = \App\Models\Cliente::find((int)$this->cliente_id);
+        if (!$cliente) return null;
+
+        $pdvQ = \App\Models\PdvVenda::where('cliente_id', $cliente->id)->where('status', 'concluida');
+        $totalPdv = (float)$pdvQ->sum('total');
+        $qtdPdv = $pdvQ->count();
+        $ultimaPdv = $pdvQ->orderBy('created_at', 'desc')->value('created_at');
+
+        $totalCompras = $qtdPdv;
+        $totalGasto = $totalPdv;
+        $ticketMedio = $totalCompras > 0 ? $totalGasto / $totalCompras : 0;
+        $diasUltima = $ultimaPdv ? now()->diffInDays($ultimaPdv) : null;
+
+        $favoritos = \App\Models\PdvVendaItem::select('produto_variacao_id', \Illuminate\Support\Facades\DB::raw('SUM(quantidade) as total'))
+            ->join('pdv_vendas', 'pdv_vendas.id', '=', 'pdv_venda_itens.venda_id')
+            ->where('pdv_vendas.cliente_id', $cliente->id)
+            ->where('pdv_vendas.status', 'concluida')
+            ->groupBy('produto_variacao_id')
+            ->orderByDesc('total')
+            ->limit(3)
+            ->with('variacao')
+            ->get()
+            ->map(fn($i) => ['nome' => $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}", 'qtd' => (float)$i->total])
+            ->toArray();
+
+        $classificacao = 'novo';
+        if ($totalCompras > 0) {
+            if ($totalGasto >= 800) $classificacao = 'top';
+            elseif ($totalGasto >= 200) $classificacao = 'medio';
+            else $classificacao = 'ocasional';
+        }
+
+        return [
+            'nome' => $cliente->nome,
+            'total_gasto' => $totalGasto,
+            'total_compras' => $totalCompras,
+            'ticket_medio' => $ticketMedio,
+            'ultima_compra' => $ultimaPdv?->format('d/m/Y'),
+            'dias_ultima' => $diasUltima,
+            'classificacao' => $classificacao,
+            'favoritos' => $favoritos,
+        ];
     }
 
     #[Computed]

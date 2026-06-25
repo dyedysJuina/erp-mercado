@@ -1,11 +1,43 @@
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#0f172a;">
     <section style="max-width:920px;width:100%;padding:20px 24px;background:#fff;border-radius:20px;">
         {{-- Total no topo --}}
-        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
             <span style="color:var(--success);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">Pagamento</span>
             <h2 style="font-size:32px;font-weight:900;color:#0f172a;margin:0;">R$ {{ number_format($this->total, 2, ',', '.') }}</h2>
             <span style="color:#64748b;font-size:12px;">Subtotal: R$ {{ number_format($this->subtotal, 2, ',', '.') }}{{ $this->decimal($this->desconto) > 0 ? ' &middot; Desconto: -R$ '.number_format($this->decimal($this->desconto), 2, ',', '.') : '' }}{{ $this->decimal($this->acrescimo) > 0 ? ' &middot; Acrescimo: +R$ '.number_format($this->decimal($this->acrescimo), 2, ',', '.') : '' }}</span>
         </div>
+
+        {{-- Cliente info --}}
+        @php $cliInfo = $this->dadosClientePdv; @endphp
+        @if ($cliInfo)
+            <div style="display:flex;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;align-items:center;flex-wrap:wrap;font-size:11px;">
+                <span style="font-weight:700;color:var(--success);"><i class="fas fa-user"></i> {{ $cliInfo['nome'] }}</span>
+                <span style="color:#475569;">Ticket: R$ {{ number_format($cliInfo['ticket_medio'], 2, ',', '.') }}</span>
+                <span style="color:#475569;">Compras: {{ $cliInfo['total_compras'] }}</span>
+                @if ($cliInfo['dias_ultima'] !== null)
+                    <span style="color:#475569;">Ultima: {{ $cliInfo['ultima_compra'] }} ({{ $cliInfo['dias_ultima'] }} dias)</span>
+                @endif
+                <span style="font-weight:700;text-transform:uppercase;font-size:10px;padding:2px 8px;border-radius:4px;{{ $cliInfo['classificacao'] === 'top' ? 'background:#fef3c7;color:#d97706;' : ($cliInfo['classificacao'] === 'medio' ? 'background:#dbeafe;color:#2563eb;' : 'background:#f1f5f9;color:#64748b;') }}">{{ $cliInfo['classificacao'] }}</span>
+                @if (!empty($cliInfo['favoritos']))
+                    <span style="color:#94a3b8;">| Mais compra: {{ implode(', ', array_column($cliInfo['favoritos'], 'nome')) }}</span>
+                @endif
+                <button wire:click="removerCliente" style="background:none;border:0;color:var(--danger);cursor:pointer;font-size:12px;margin-left:auto;">&times;</button>
+            </div>
+        @else
+            <div style="margin-bottom:14px;">
+                <input wire:model.blur="buscaCliente" type="search" placeholder="CPF do cliente (para identificar)..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:#0f172a;">
+                @if (count($this->clientes) > 0)
+                    <div style="margin-top:4px;max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;">
+                        @foreach ($this->clientes as $client)
+                            <button wire:click="selecionarCliente({{ $client['id'] }})" style="display:block;width:100%;text-align:left;padding:6px 10px;border:0;border-bottom:1px solid var(--border);background:none;cursor:pointer;color:#0f172a;font-size:12px;">
+                                <strong>{{ $client['nome'] }}</strong>
+                                <small style="color:#64748b;">{{ $client['cpf'] ?? '' }}</small>
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endif
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
             {{-- COLUNA ESQUERDA: pagamentos + dinheiro --}}
