@@ -420,6 +420,8 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                 </div>
             @endif
         @endif
+    </div>
+        @endif
 
         {{-- SUBSTITUTO MODAL --}}
         <div x-show="$wire.showSubstituto" x-cloak
