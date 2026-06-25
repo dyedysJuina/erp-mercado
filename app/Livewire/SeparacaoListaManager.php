@@ -18,6 +18,7 @@ class SeparacaoListaManager extends Component
     protected $queryString = ['busca'];
 
     #[Computed]
+    #[Computed]
     public function pendentes()
     {
         $q = Pedido::where('origem', 'site')
