@@ -129,8 +129,8 @@ class SeparacaoManager extends Component
             'sku' => $i->variacao?->sku ?? '',
             'foto' => (function() use ($i) {
                 $foto = $i->variacao?->foto_capa_url ?? '';
-                if ($foto && !str_starts_with($foto, 'http://') && !str_starts_with($foto, 'https://')) {
-                    $foto = asset($foto);
+                if ($foto && !str_starts_with($foto, 'http://') && !str_starts_with($foto, 'https://') && !str_starts_with($foto, '//')) {
+                    $foto = asset(ltrim($foto, '/'));
                 }
                 return $foto;
             })(),
