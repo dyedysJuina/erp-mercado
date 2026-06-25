@@ -220,7 +220,6 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                         <i class="fas fa-check-double" style="margin-right:6px;"></i> Confirmar e Finalizar ({{ $this->volumes }} {{ $this->volumes > 1 ? 'volumes' : 'volume' }})
                     </button>
                 @endif
-                </button>
                 <a href="/separacao" wire:navigate style="display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--muted);text-decoration:none;padding:6px;">Voltar para lista</a>
             </div>
 
