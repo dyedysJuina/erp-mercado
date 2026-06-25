@@ -15,13 +15,23 @@ class SeparacaoListaManager extends Component
     public string $busca = '';
     public string $toastMsg = '';
     public bool $toastShow = false;
+    public string $filtroStatus = 'todos';
 
-    protected $queryString = ['busca'];
+    protected $queryString = ['busca', 'filtroStatus'];
 
     public function pendentes()
     {
+        $statusList = ['recebido', 'confirmado', 'em_separacao'];
+        if ($this->filtroStatus === 'novos') {
+            $statusList = ['recebido', 'confirmado'];
+        } elseif ($this->filtroStatus === 'separando') {
+            $statusList = ['em_separacao'];
+        } elseif ($this->filtroStatus === 'separados') {
+            $statusList = ['pronto_retirada', 'pronto_entrega', 'entregue'];
+        }
+
         $q = Pedido::where('origem', 'site')
-            ->whereIn('status', ['recebido', 'confirmado', 'em_separacao'])
+            ->whereIn('status', $statusList)
             ->with(['cliente', 'itens'])
             ->orderBy('created_at', 'asc');
 
@@ -40,7 +50,8 @@ class SeparacaoListaManager extends Component
         $pedidos = $q->paginate(20);
         $agora = now();
         $atrasados = [];
-        $normais = [];
+        $andamento = [];
+        $recentes = [];
 
         foreach ($pedidos as $p) {
             $totalItens = $p->itens->count();
@@ -74,6 +85,7 @@ class SeparacaoListaManager extends Component
                 'id' => $p->id, 'codigo' => $p->codigo,
                 'cliente_nome' => $p->cliente?->nome ?? '—',
                 'cliente_whatsapp' => $p->cliente?->whatsapp ?? '',
+                'tipo_entrega' => $p->tipo_entrega,
                 'total_itens' => $totalItens, 'total_separados' => $separados,
                 'total_faltou' => $faltou, 'total_pendentes' => $pendentes,
                 'total_substituidos' => $substituidos,
@@ -84,11 +96,30 @@ class SeparacaoListaManager extends Component
                 'created_at' => $p->created_at->format('d/m/Y H:i'),
             ];
 
-            if ($atrasado) { $atrasados[] = $data; }
-            else { $normais[] = $data; }
+            if ($segundos > 1800) {
+                $atrasados[] = $data;
+            } elseif ($segundos > 900) {
+                $andamento[] = $data;
+            } else {
+                $recentes[] = $data;
+            }
         }
 
-        return ['atrasados' => $atrasados, 'normais' => $normais, 'total' => $totalAll, 'paginator' => $pedidos];
+        $contagem = [
+            'todos' => Pedido::where('origem', 'site')->whereIn('status', ['recebido', 'confirmado', 'em_separacao'])->count(),
+            'novos' => Pedido::where('origem', 'site')->whereIn('status', ['recebido', 'confirmado'])->count(),
+            'separando' => Pedido::where('origem', 'site')->whereIn('status', ['em_separacao'])->count(),
+            'separados' => Pedido::where('origem', 'site')->whereIn('status', ['pronto_retirada', 'pronto_entrega', 'entregue'])->count(),
+        ];
+
+        return [
+            'atrasados' => $atrasados,
+            'andamento' => $andamento,
+            'recentes' => $recentes,
+            'total' => $totalAll,
+            'paginator' => $pedidos,
+            'contagem' => $contagem
+        ];
     }
 
     public function totalPendentes(): int

@@ -127,7 +127,13 @@ class SeparacaoManager extends Component
             'status' => $i->status_item,
             'observacao' => $i->observacao_separacao ?? '',
             'sku' => $i->variacao?->sku ?? '',
-            'foto' => $i->variacao?->foto_capa_url ?? '',
+            'foto' => (function() use ($i) {
+                $foto = $i->variacao?->foto_capa_url ?? '';
+                if ($foto && !str_starts_with($foto, 'http://') && !str_starts_with($foto, 'https://')) {
+                    $foto = asset($foto);
+                }
+                return $foto;
+            })(),
             'localizacao' => $local ? trim(implode(' > ', array_filter([$local->corredor, $local->prateleira]))) : null,
             'categoria' => $cat?->caminho ?? ($cat?->nome ?? 'Geral'),
             'substituto_id' => (int)($i->substituto_produto_variacao_id ?: 0),
@@ -193,6 +199,7 @@ class SeparacaoManager extends Component
             $item['qtd_separada'] = $item['qtd_pedido'];
             $item['status'] = 'separado';
             $item['observacao'] = 'OK';
+            $this->confirmarProximo();
         } elseif ($status === 'parcial') {
             $item['qtd_separada'] = max(1, $item['qtd_pedido'] - 1);
             $item['status'] = 'separado';
@@ -201,6 +208,7 @@ class SeparacaoManager extends Component
             $item['qtd_separada'] = 0;
             $item['status'] = 'faltou';
             $item['observacao'] = 'Sem estoque na gôndola';
+            $this->confirmarProximo();
         }
     }
 
@@ -316,6 +324,8 @@ class SeparacaoManager extends Component
         $item = $this->itens[$this->itemAtual] ?? null;
         if (!$item) return;
 
+        $item['qtd_separada'] = max(0.0, min((float)$item['qtd_pedido'], (float)$item['qtd_separada']));
+
         $statusFinal = $item['status'];
         if ($statusFinal === 'pendente') {
             if ($item['qtd_separada'] >= $item['qtd_pedido']) {
@@ -388,7 +398,7 @@ class SeparacaoManager extends Component
 
     public function abrirConferencia(): void
     {
-        $this->conferenciaAprovada = false;
+        $this->conferenciaAprovada = true;
     }
 
     public function finalizarSeparacao()

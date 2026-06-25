@@ -308,7 +308,6 @@ class EstoqueManager extends Component
 
         $this->modalOpen = false;
         $this->toast('Movimentação registrada com sucesso!');
-        $this->forgetComputed('saldos');
         $this->resetErrorBag();
     }
 
