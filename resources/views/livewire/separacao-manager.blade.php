@@ -44,6 +44,20 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
 
     @php $p = $this->pedido(); $item = $this->item; $prog = $this->progresso(); @endphp
 
+    {{-- BLOQUEIO --}}
+    @if ($this->bloqueioErro)
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;">
+            <div style="width:80px;height:80px;border-radius:50%;background:color-mix(in srgb,#ef4444,12%,transparent);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <i class="fas fa-lock" style="font-size:32px;color:#ef4444;"></i>
+            </div>
+            <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0 0 8px;">Pedido em uso</h2>
+            <p style="font-size:13px;color:var(--muted);margin:0 0 20px;">{{ $this->bloqueioErro }}</p>
+            <a href="/separacao" wire:navigate style="padding:12px 24px;border:0;border-radius:10px;background:#f59e0b;color:#fff;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;">
+                <i class="fas fa-arrow-left" style="margin-right:6px;"></i> Voltar para lista
+            </a>
+        </div>
+    @else
+
     <div style="max-width:480px;margin:0 auto;background:linear-gradient(180deg,color-mix(in srgb,#f59e0b,4%,transparent) 0%,color-mix(in srgb,var(--text)3%,transparent) 100%);min-height:100vh;display:flex;flex-direction:column;">
 
         {{-- ===== HEADER ===== --}}
@@ -98,8 +112,8 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                                     <span style="font-size:10px;color:var(--muted);">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }} un</span>
                                 </div>
                                 <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;
-                                    {{ $pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'background:color-mix(in srgb,#22c55e,12%,transparent);color:#22c55e;' : ($pr['qtd_separada'] > 0 ? 'background:color-mix(in srgb,#f59e0b,12%,transparent);color:#f59e0b;' : 'background:color-mix(in srgb,#ef4444,12%,transparent);color:#ef4444;') }}">
-                                    {{ $pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'OK' : ($pr['qtd_separada'] > 0 ? 'PARCIAL' : 'FALTOU') }}
+                                    {{ $pr['status'] === 'quantidade_alterada' ? 'background:color-mix(in srgb,#3b82f6,12%,transparent);color:#3b82f6;' : ($pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'background:color-mix(in srgb,#22c55e,12%,transparent);color:#22c55e;' : ($pr['qtd_separada'] > 0 ? 'background:color-mix(in srgb,#f59e0b,12%,transparent);color:#f59e0b;' : 'background:color-mix(in srgb,#ef4444,12%,transparent);color:#ef4444;')) }}">
+                                    {{ $pr['status'] === 'quantidade_alterada' ? 'QTD ALT' : ($pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'OK' : ($pr['qtd_separada'] > 0 ? 'PARCIAL' : 'FALTOU')) }}
                                 </span>
                             </div>
                         @endforeach
@@ -112,6 +126,18 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                                 <span style="font-size:10px;font-weight:700;color:var(--muted);display:block;">Faltou</span>
                                 <span style="font-size:18px;font-weight:900;color:#ef4444;">{{ $prog['faltou'] }}</span>
                             </div>
+                            @if ($prog['altQtd'] > 0)
+                            <div style="background:color-mix(in srgb,#3b82f6,6%,transparent);border-radius:8px;padding:8px;text-align:center;">
+                                <span style="font-size:10px;font-weight:700;color:var(--muted);display:block;">Qtd Alt.</span>
+                                <span style="font-size:18px;font-weight:900;color:#3b82f6;">{{ $prog['altQtd'] }}</span>
+                            </div>
+                            @endif
+                            @if ($prog['substituidos'] > 0)
+                            <div style="background:color-mix(in srgb,#f59e0b,6%,transparent);border-radius:8px;padding:8px;text-align:center;">
+                                <span style="font-size:10px;font-weight:700;color:var(--muted);display:block;">Subst.</span>
+                                <span style="font-size:18px;font-weight:900;color:#f59e0b;">{{ $prog['substituidos'] }}</span>
+                            </div>
+                            @endif
                         </div>
 
                         {{-- Cancelados --}}
@@ -181,8 +207,14 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                         @if ($prog['substituidos'] > 0)
                             <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;vertical-align:middle;margin-right:2px;"></span> {{ $prog['substituidos'] }} Subst.</span>
                         @endif
+                        @if ($prog['altQtd'] > 0)
+                            <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;vertical-align:middle;margin-right:2px;"></span> {{ $prog['altQtd'] }} Qtd Alt.</span>
+                        @endif
                         @if ($prog['cancelados'] > 0)
                             <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6b7280;vertical-align:middle;margin-right:2px;"></span> {{ $prog['cancelados'] }} Cancel.</span>
+                        @endif
+                        @if ($prog['altQtd'] > 0)
+                            <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;vertical-align:middle;margin-right:2px;"></span> {{ $prog['altQtd'] }} Qtd Alt.</span>
                         @endif
                     </div>
                 </div>
@@ -291,7 +323,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                         @foreach ($this->processados as $pr)
                             <div style="display:flex;justify-content:space-between;padding:5px 16px;border-bottom:1px solid color-mix(in srgb,var(--text)3%,transparent);font-size:11px;">
                                 <span style="font-weight:600;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">{{ $pr['nome'] }}</span>
-                                <span style="white-space:nowrap;{{ $pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'color:#22c55e;' : ($pr['qtd_separada'] > 0 ? 'color:#f59e0b;' : 'color:#ef4444;') }};">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }}</span>
+                                <span style="white-space:nowrap;{{ $pr['status'] === 'quantidade_alterada' ? 'color:#3b82f6;' : ($pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'color:#22c55e;' : ($pr['qtd_separada'] > 0 ? 'color:#f59e0b;' : 'color:#ef4444;')) }};">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }}</span>
                             </div>
                         @endforeach
                     @endif

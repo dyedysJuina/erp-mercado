@@ -13,9 +13,10 @@ class PedidoItem extends Model
     protected $fillable = [
         'pedido_id', 'produto_variacao_id', 'oferta_produto_id',
         'quantidade_solicitada', 'quantidade_atendida',
-        'preco_unitario', 'total_item', 'status_item',
-        'substituto_produto_variacao_id',
+        'quantidade_separada', 'preco_unitario', 'total_item',
+        'status_item', 'substituto_produto_variacao_id',
         'observacao_cliente', 'observacao_separador',
+        'observacao_separacao', 'separado_por',
     ];
 
     protected function casts(): array

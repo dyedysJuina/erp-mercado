@@ -3,6 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Pedido;
+use App\Models\PedidoSeparacao;
+use App\Models\PedidoStatusHistorico;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -105,8 +107,23 @@ class SeparacaoListaManager extends Component
             return;
         }
 
+        $statusAntigo = $pedido->status;
+
         $pedido->update(['status' => 'cancelado']);
         $pedido->itens()->update(['status_item' => 'cancelado']);
+
+        PedidoSeparacao::where('pedido_id', $id)
+            ->whereIn('status', ['em_andamento', 'pausada'])
+            ->update(['status' => 'cancelada', 'fim_at' => now()]);
+
+        PedidoStatusHistorico::create([
+            'pedido_id' => $pedido->id,
+            'usuario_id' => auth()->id(),
+            'status_anterior' => $statusAntigo,
+            'status_novo' => 'cancelado',
+            'observacao' => 'Cancelado via separação',
+        ]);
+
         $this->toast('Pedido #' . $id . ' cancelado.');
     }
 
