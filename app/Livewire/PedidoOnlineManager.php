@@ -54,8 +54,7 @@ class PedidoOnlineManager extends Component
         if ($lojaId = auth()->user()->loja_id) {
             $q->where('loja_id', $lojaId);
         }
-        $q = $q->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
-            ->orderBy('created_at', 'desc');
+        $q->orderBy('created_at', 'desc');
 
         if ($this->periodo === 'hoje') {
             $q->whereDate('created_at', today());
@@ -74,7 +73,9 @@ class PedidoOnlineManager extends Component
             });
         }
 
-        return $q->paginate(30);
+        $result = $q->paginate(30);
+        $result->load(['cliente', 'itens.variacao', 'separador', 'entregador']);
+        return $result;
     }
 
     public function statusDoPedido(Pedido $p): array
