@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Pedido;
+use App\Models\PedidoItem;
 use App\Models\User;
 use App\Models\ProdutoVariacao;
 use Carbon\Carbon;

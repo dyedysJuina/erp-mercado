@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
     $r('/compras', \App\Livewire\SugestaoCompraManager::class, 'compras');
     $r('/pedidos', \App\Livewire\PedidoListaManager::class, 'pedidos');
     $r('/pedidos-online', \App\Livewire\PedidoOnlineManager::class, 'pedidos-online', 'pedidos');
+    Route::get('/pedidos-online/{id}', \App\Livewire\PedidoOnlineDetalheManager::class)->name('pedidos-online.detalhe')->middleware(['auth', 'permission:pedidos']);
     Route::get('/pedidos/{id}', \App\Livewire\PedidoDetalheManager::class)->name('pedidos.detalhe')->middleware(['auth', 'permission:pedidos']);
     $r('/vendas', \App\Livewire\VendaManager::class, 'vendas', 'pdv');
     $r('/financeiro', \App\Livewire\FinanceiroManager::class, 'financeiro');
