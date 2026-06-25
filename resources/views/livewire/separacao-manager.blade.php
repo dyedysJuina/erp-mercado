@@ -1,9 +1,6 @@
-@push('head')
-<meta name="theme-color" content="#f59e0b">
+<div>
+<script src="/js/html5-qrcode.min.js" defer></script>
 <style>
-/* ======================================
-   TOAST
-   ====================================== */
 .toast-fixed{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:999;display:flex;align-items:center;gap:10px;box-shadow:0 12px 48px rgba(0,0,0,0.12);max-width:90%}
 .toast-icon{width:22px;height:22px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px}
 .toast-enter{transition:all 0.3s ease-out}
@@ -12,10 +9,6 @@
 .toast-leave-end{opacity:0;transform:translateX(-50%) translateY(-20px)!important}
 [x-cloak]{display:none!important}
 .ring-2{border-color:#f59e0b!important;box-shadow:0 0 0 3px color-mix(in srgb,#f59e0b 30%,transparent)!important}
-
-/* ======================================
-   MODAL
-   ====================================== */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:16px;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -44,8 +37,6 @@
 .badge-tag.substituted{background:color-mix(in srgb,#3b82f6 12%,transparent);color:#2563eb}
 .badge-tag.canceled{background:color-mix(in srgb,#6b7280 12%,transparent);color:#6b7280}
 </style>
-@endpush
-
 <div x-data="{
     show: @entangle('toastShow'),
     msg: @entangle('toastMsg'),
@@ -498,4 +489,5 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
     </div>
 
     @endif {{-- end bloqueio --}}
+    </div>
 </div>
