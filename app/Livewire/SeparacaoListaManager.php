@@ -74,7 +74,7 @@ class SeparacaoListaManager extends Component
                 'total_faltou' => $faltou, 'total_pendentes' => $pendentes,
                 'total_substituidos' => $substituidos,
                 'progresso' => $pct, 'total' => (float)$p->total,
-                'segundos_atraso' => $segundos, 'tempo_atraso' => $tempo,
+                'segundos_atraso' => $segundos, 'minutos_atraso' => round($segundos / 60), 'tempo_atraso' => $tempo,
                 'status' => $p->status,
                 'ja_iniciou' => $p->status === 'em_separacao',
                 'created_at' => $p->created_at->format('d/m/Y H:i'),
