@@ -236,7 +236,7 @@ class SugestaoCompraManager extends Component
             $ultimosPrecos = CompraPedidoItem::select('produto_variacao_id', 'custo_unitario', 'compra_pedido_id')
                 ->whereIn('produto_variacao_id', $variacaoIds)
                 ->whereHas('pedido', fn($q) => $q->where('status', '!=', 'cancelado'))
-                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
                 ->get()
                 ->groupBy('produto_variacao_id')
                 ->map(fn($g) => ['preco' => (float)$g->first()->custo_unitario, 'pedido_id' => $g->first()->compra_pedido_id])
