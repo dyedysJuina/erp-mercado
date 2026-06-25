@@ -61,7 +61,7 @@ class SeparacaoManager extends Component
                 $this->separacaoId = $sep->id;
             }
         } catch (\Exception $e) {
-            // Tabela pode não existir (migration pendente) — segue sem bloqueio
+            \Log::warning('SeparacaoManager::iniciar: ' . $e->getMessage());
             $this->separacaoId = null;
         }
 
@@ -70,12 +70,15 @@ class SeparacaoManager extends Component
 
     public function carregarItens(): void
     {
-        $pedido = Pedido::with('itens.variacao.produtoBase.categoria')->findOrFail($this->pedidoId);
-        $todos = $pedido->itens->values();
+        $pedido = Pedido::with('itens.variacao.produtoBase.categoria')->find($this->pedidoId);
+        if (!$pedido) {
+            $this->bloqueioErro = 'Pedido não encontrado.';
+            return;
+        }
 
+        $todos = $pedido->itens->values();
         $variacaoIds = $todos->pluck('produto_variacao_id')->filter()->unique()->toArray();
 
-        // Batch query localizacao via EstoqueSaldo -> EstoqueLocal
         $locais = collect();
         if (!empty($variacaoIds) && $pedido->loja_id) {
             $saldos = EstoqueSaldo::with('local')
@@ -97,10 +100,8 @@ class SeparacaoManager extends Component
         $this->processados = $jaProcessados->map(fn($i) => $this->mapearItem($i, $locais))->toArray();
         $this->itens = $pendentes->map(fn($i) => $this->mapearItem($i, $locais))->toArray();
 
-        // Sort pendentes by categoria for grouping
         usort($this->itens, fn($a, $b) => strcmp($a['categoria'] ?? '', $b['categoria'] ?? ''));
 
-        // Garantir PedidoSeparacaoItem para itens pendentes
         if ($this->separacaoId) {
             foreach ($this->itens as $item) {
                 PedidoSeparacaoItem::firstOrCreate([
@@ -167,18 +168,19 @@ class SeparacaoManager extends Component
 
     public function definirQuantidade(float $qtd): void
     {
-        if (isset($this->itens[$this->itemAtual])) {
-            $this->itens[$this->itemAtual]['qtd_separada'] = max(0, min($this->itens[$this->itemAtual]['qtd_pedido'], $qtd));
-        }
+        if (!isset($this->itens[$this->itemAtual])) return;
+        $this->itens[$this->itemAtual]['qtd_separada'] = max(0, min($this->itens[$this->itemAtual]['qtd_pedido'], $qtd));
     }
 
     public function incrementar(): void
     {
+        if (!isset($this->itens[$this->itemAtual])) return;
         $this->definirQuantidade(($this->itens[$this->itemAtual]['qtd_separada'] ?? 0) + 1);
     }
 
     public function decrementar(): void
     {
+        if (!isset($this->itens[$this->itemAtual])) return;
         $this->definirQuantidade(($this->itens[$this->itemAtual]['qtd_separada'] ?? 0) - 1);
     }
 
@@ -199,9 +201,6 @@ class SeparacaoManager extends Component
             $item['qtd_separada'] = 0;
             $item['status'] = 'faltou';
             $item['observacao'] = 'Sem estoque na gôndola';
-        } elseif ($status === 'qtd_alterada') {
-            $item['status'] = 'quantidade_alterada';
-            $item['observacao'] = $item['observacao'] ?: 'Quantidade ajustada manualmente';
         }
     }
 
@@ -223,14 +222,13 @@ class SeparacaoManager extends Component
             if ((int)$item['variacao_id'] === (int)$barcode->produto_variacao_id) {
                 if ($idx === $this->itemAtual) {
                     $this->scanFeedback = 'ok';
-                    $this->toast('Item atual confirmado por código de barras!');
-                    // Auto-confirmar
+                    $this->toast('Item confirmado por código!');
                     $this->definirStatus('ok');
                     $this->confirmarProximo();
                 } else {
                     $this->itemAtual = $idx;
                     $this->scanFeedback = 'ok';
-                    $this->toast('Navegando para item: ' . $item['nome']);
+                    $this->toast('Indo para: ' . $item['nome']);
                 }
                 return;
             }
@@ -285,7 +283,6 @@ class SeparacaoManager extends Component
         if (!isset($this->itens[$this->itemAtual])) return;
         $item = &$this->itens[$this->itemAtual];
 
-        // Find the substitute name
         $sub = collect($this->resultadosSubstituto)->firstWhere('id', $variacaoId);
         $nomeSub = $sub['nome'] ?? "#{$variacaoId}";
 
@@ -301,13 +298,13 @@ class SeparacaoManager extends Component
     {
         $pedido = $this->pedido();
         $cliente = $pedido?->cliente;
-        if (!$cliente || !$cliente->whatsapp) return '';
+        if (!$cliente || !$cliente->whatsapp) return '#';
 
         $numero = preg_replace('/\D/', '', $cliente->whatsapp);
         $mensagens = [
-            'iniciando' => "Olá {$cliente->nome}! Seu pedido #{$pedido->id} está sendo separado. Em breve avisamos quando estiver pronto. 🛒",
-            'faltou' => "Oi {$cliente->nome}! Infelizmente alguns itens do seu pedido #{$pedido->id} estão em falta. Vamos te atualizar em breve.",
-            'pronto' => "{$cliente->nome}, seu pedido #{$pedido->id} já está separado e pronto para retirada/entrega! ✅",
+            'iniciando' => "Olá {$cliente->nome}! Seu pedido #{$pedido->id} está sendo separado. Em breve avisamos quando estiver pronto.",
+            'faltou' => "Oi {$cliente->nome}! Infelizmente alguns itens do seu pedido #{$pedido->id} estão em falta. Vamos te atualizar.",
+            'pronto' => "{$cliente->nome}, seu pedido #{$pedido->id} já está separado e pronto para retirada/entrega!",
             'substituicao' => "{$cliente->nome}, precisamos autorizar uma substituição no pedido #{$pedido->id}. Entraremos em contato.",
         ];
 
@@ -327,7 +324,7 @@ class SeparacaoManager extends Component
                 $item['observacao'] = 'OK';
             } elseif ($item['qtd_separada'] > 0) {
                 $statusFinal = 'quantidade_alterada';
-                $item['observacao'] = $item['observacao'] ?: 'Quantidade ajustada manualmente';
+                $item['observacao'] = $item['observacao'] ?: 'Quantidade ajustada';
             } else {
                 $statusFinal = 'faltou';
                 $item['observacao'] = $item['observacao'] ?: 'Não separado';
@@ -369,7 +366,9 @@ class SeparacaoManager extends Component
 
     public function pularItem(): void
     {
-        $this->itemAtual++;
+        if ($this->itemAtual + 1 < count($this->itens)) {
+            $this->itemAtual++;
+        }
     }
 
     public function abrirConferencia(): void
@@ -385,7 +384,9 @@ class SeparacaoManager extends Component
         DB::transaction(function () {
             for ($i = 0; $i < count($this->itens); $i++) {
                 $item = $this->itens[$i];
-                $st = $item['status'] ?: ($item['qtd_separada'] > 0 ? 'separado' : 'faltou');
+                $st = $item['status'] === 'pendente'
+                    ? ($item['qtd_separada'] > 0 ? 'separado' : 'faltou')
+                    : $item['status'];
                 PedidoItem::where('id', $item['id'])->update([
                     'status_item' => $st,
                     'quantidade_separada' => $item['qtd_separada'],
@@ -421,13 +422,17 @@ class SeparacaoManager extends Component
 
     private function logStatusHistorico($pedido, $antigo, $novo, $obs = null): void
     {
-        PedidoStatusHistorico::create([
-            'pedido_id' => $pedido->id,
-            'usuario_id' => auth()->id(),
-            'status_anterior' => $antigo,
-            'status_novo' => $novo,
-            'observacao' => $obs,
-        ]);
+        try {
+            PedidoStatusHistorico::create([
+                'pedido_id' => $pedido->id,
+                'usuario_id' => auth()->id(),
+                'status_anterior' => $antigo,
+                'status_novo' => $novo,
+                'observacao' => $obs,
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('logStatusHistorico: ' . $e->getMessage());
+        }
     }
 
     public function toast(string $msg): void

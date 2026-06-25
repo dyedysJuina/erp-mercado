@@ -1,5 +1,5 @@
 <div>
-<script src="/js/html5-qrcode.min.js" defer></script>
+<script src="/js/html5-qrcode.min.js"></script>
 <style>
 .toast-fixed{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:999;display:flex;align-items:center;gap:10px;box-shadow:0 12px 48px rgba(0,0,0,0.12);max-width:90%}
 .toast-icon{width:22px;height:22px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px}
@@ -149,7 +149,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
         </div>
 
         {{-- ===== RESUME / FINAL ===== --}}
-        @if ($item || count($this->itens) > 0)
+        @if ($item && count($this->itens) > 0)
             {{-- ITEM ATUAL --}}
             <div style="flex:1;padding:16px 16px 90px;overflow-y:auto;">
 
@@ -409,7 +409,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
         <div class="modal-sheet">
             <h3><i class="fas fa-exchange-alt" style="color:#3b82f6;"></i> Substituir produto</h3>
             <div class="field"><label>Buscar produto</label>
-                <input wire:model.live="buscaSubstituto" wire:input="buscarSubstituto" placeholder="Digite o nome do produto...">
+                <input wire:model="buscaSubstituto" wire:input.live="buscarSubstituto" placeholder="Digite o nome do produto...">
             </div>
             @if (count($this->resultadosSubstituto) > 0)
                 <div style="max-height:280px;overflow-y:auto;">

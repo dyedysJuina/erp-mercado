@@ -1,5 +1,5 @@
 <div>
-<script src="/js/html5-qrcode.min.js" defer></script>
+<script src="/js/html5-qrcode.min.js"></script>
 <style>
 /* ======================================
    VARIABLES - TEMA PROPRIO SEPARACAO
@@ -118,7 +118,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
             <div style="display:flex;align-items:center;gap:8px;margin-top:12px;background:rgba(255,255,255,0.13);backdrop-filter:blur(8px);border-radius:var(--sep-radius-sm);padding:3px 3px 3px 14px;border:1px solid rgba(255,255,255,0.08);">
                 <i class="fas fa-search" style="color:rgba(255,255,255,0.6);font-size:14px;"></i>
                 <input wire:model.live.debounce.300ms="busca" placeholder="Buscar pedido, cliente ou ID..."
-                       style="flex:1;border:none;background:transparent;padding:10px 0;font-size:14px;color:#fff;outline:none;min-width:0;"">
+                       style="flex:1;border:none;background:transparent;padding:10px 0;font-size:14px;color:#fff;outline:none;min-width:0;">
                 <button onclick="alert('📷 Scanner simulado')" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:8px 14px;border-radius:var(--sep-radius-sm);cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;">
                     <i class="fas fa-camera" style="font-size:16px;"></i> <span>Scan</span>
                 </button>

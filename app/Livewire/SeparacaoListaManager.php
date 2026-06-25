@@ -27,8 +27,11 @@ class SeparacaoListaManager extends Component
 
         if (strlen(trim($this->busca)) >= 2) {
             $q->where(function ($w) {
-                $w->where('id', (int)$this->busca)
-                  ->orWhere('codigo', 'like', "%{$this->busca}%")
+                $buscaNum = is_numeric($this->busca) ? (int)$this->busca : null;
+                if ($buscaNum) {
+                    $w->where('id', $buscaNum);
+                }
+                $w->orWhere('codigo', 'like', "%{$this->busca}%")
                   ->orWhereHas('cliente', fn($c) => $c->where('nome', 'like', "%{$this->busca}%"));
             });
         }
@@ -48,6 +51,7 @@ class SeparacaoListaManager extends Component
             $pct = $totalItens > 0 ? round((($separados + $substituidos) / $totalItens) * 100) : 0;
 
             $segundos = $p->created_at->diffInSeconds($agora);
+            $minutos = (int)round($segundos / 60);
             $atrasado = $segundos > 1800 && !in_array($p->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado']);
 
             if ($segundos < 60) {
@@ -55,15 +59,15 @@ class SeparacaoListaManager extends Component
             } elseif ($segundos < 3600) {
                 $m = floor($segundos / 60);
                 $s = $segundos % 60;
-                $tempo = $m . 'min ' . ($s > 0 ? $s . 's' : '');
+                $tempo = $m . 'min' . ($s > 0 ? ' ' . $s . 's' : '');
             } elseif ($segundos < 86400) {
                 $h = floor($segundos / 3600);
                 $m = floor(($segundos % 3600) / 60);
-                $tempo = $h . 'h ' . ($m > 0 ? $m . 'min' : '');
+                $tempo = $h . 'h' . ($m > 0 ? ' ' . $m . 'min' : '');
             } else {
                 $d = floor($segundos / 86400);
                 $h = floor(($segundos % 86400) / 3600);
-                $tempo = $d . 'd ' . ($h > 0 ? $h . 'h' : '');
+                $tempo = $d . 'd' . ($h > 0 ? ' ' . $h . 'h' : '');
             }
 
             $data = [
@@ -74,7 +78,7 @@ class SeparacaoListaManager extends Component
                 'total_faltou' => $faltou, 'total_pendentes' => $pendentes,
                 'total_substituidos' => $substituidos,
                 'progresso' => $pct, 'total' => (float)$p->total,
-                'segundos_atraso' => $segundos, 'minutos_atraso' => round($segundos / 60), 'tempo_atraso' => $tempo,
+                'segundos_atraso' => $segundos, 'minutos_atraso' => $minutos, 'tempo_atraso' => $tempo,
                 'status' => $p->status,
                 'ja_iniciou' => $p->status === 'em_separacao',
                 'created_at' => $p->created_at->format('d/m/Y H:i'),
@@ -84,10 +88,7 @@ class SeparacaoListaManager extends Component
             else { $normais[] = $data; }
         }
 
-        return [
-            'atrasados' => $atrasados, 'normais' => $normais,
-            'total' => $totalAll, 'paginator' => $pedidos,
-        ];
+        return ['atrasados' => $atrasados, 'normais' => $normais, 'total' => $totalAll, 'paginator' => $pedidos];
     }
 
     public function totalPendentes(): int
@@ -117,7 +118,7 @@ class SeparacaoListaManager extends Component
                 ->whereIn('status', ['em_andamento', 'pausada'])
                 ->update(['status' => 'cancelada', 'fim_at' => now()]);
         } catch (\Exception $e) {
-            // Tabela pode não existir — segue
+            \Log::warning('cancelarPedido separacao: ' . $e->getMessage());
         }
 
         try {
@@ -129,7 +130,7 @@ class SeparacaoListaManager extends Component
                 'observacao' => 'Cancelado via separação',
             ]);
         } catch (\Exception $e) {
-            // Tabela pode não existir — segue
+            \Log::warning('cancelarPedido historico: ' . $e->getMessage());
         }
 
         $this->toast('Pedido #' . $id . ' cancelado.');
