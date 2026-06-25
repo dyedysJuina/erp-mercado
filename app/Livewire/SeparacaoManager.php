@@ -73,7 +73,7 @@ class SeparacaoManager extends Component
                 ->where('quantidade_atual', '>', 0)
                 ->get()
                 ->groupBy('produto_variacao_id');
-            $locais = $saldos->map(fn($g) => $g->first()->local);
+            $locais = $saldos->map(fn($g) => $g->first()?->local);
         }
 
         $this->cancelados = $todos->filter(fn($i) => $i->status_item === 'cancelado')
@@ -117,7 +117,7 @@ class SeparacaoManager extends Component
             'sku' => $i->variacao?->sku ?? '',
             'foto' => $i->variacao?->foto_capa_url ?? '',
             'localizacao' => $local ? trim(implode(' > ', array_filter([$local->corredor, $local->prateleira]))) : null,
-            'categoria' => $cat->caminho ?? ($cat->nome ?? 'Geral'),
+            'categoria' => $cat?->caminho ?? ($cat?->nome ?? 'Geral'),
         ];
     }
 
