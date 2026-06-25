@@ -242,8 +242,12 @@ class NfceService
             $prod->addChild('cProd', $item->variacao?->sku ?? (string)$item->produto_variacao_id);
             $gtin = $item->variacao?->codigosBarras?->firstWhere('principal', true)?->codigo;
             $prod->addChild('cEAN', $gtin ?: 'SEM GTIN');
+            $ncm = $item->ncm ?: '00000000';
+            if ($ncm === '00000000') {
+                logger()->warning('NFC-e item sem NCM: ' . ($item->variacao?->nome_completo ?? '#' . $item->produto_variacao_id));
+            }
+            $prod->addChild('NCM', $ncm);
             $prod->addChild('xProd', $item->variacao?->nome_completo ?? 'Produto');
-            $prod->addChild('NCM', $item->ncm ?: '00000000');
             $prod->addChild('CFOP', $item->cfop ?: '5102');
             $prod->addChild('uCom', $item->variacao?->unidadeMedida?->sigla ?? 'UN');
             $prod->addChild('qCom', number_format($item->quantidade, 4, '.', ''));

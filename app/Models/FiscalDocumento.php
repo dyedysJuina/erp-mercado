@@ -23,6 +23,8 @@ class FiscalDocumento extends Model
         return [
             'valor_total' => 'float',
             'emitida_at' => 'datetime',
+            'status' => 'string',
+            'tipo' => 'string',
         ];
     }
 
