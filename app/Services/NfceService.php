@@ -33,7 +33,13 @@ class NfceService
                 'status' => 'rascunho',
                 'valor_total' => $venda->total,
                 'emitida_at' => now(),
+                'cliente_id' => $venda->cliente_id,
+                'pdv_venda_id' => $venda->id,
             ]);
+
+            if ($perfil) {
+                $perfil->increment('numero_nfce_atual');
+            }
 
             $impostoService = app(CalculoImpostoService::class);
 
@@ -183,7 +189,7 @@ class NfceService
         $enderEmit->addChild('CEP', $cep);
         if ($telefone) $enderEmit->addChild('fone', $telefone);
         $emit->addChild('IE', $ie);
-        $emit->addChild('CRT', $perfil?->crt ?? '1');
+        $emit->addChild('CRT', $perfil?->regime_tributario ?? '1');
 
         $dest = $infNFe->addChild('dest');
         $cliente = $venda?->cliente;

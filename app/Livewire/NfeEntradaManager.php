@@ -131,8 +131,10 @@ class NfeEntradaManager extends Component
     public function registrar(): void
     {
         $this->validate([
-            'loja_id' => ['required'],
+            'loja_id' => ['required', 'exists:lojas,id'],
             'fornecedor_id' => ['required'],
+            'data_emissao' => ['required', 'date', 'before_or_equal:today'],
+            'data_recebimento' => ['required', 'date'],
             'itens' => ['required', 'array', 'min:1'],
         ]);
 
