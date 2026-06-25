@@ -218,22 +218,21 @@ class SeparacaoManager extends Component
             return;
         }
 
+        // Procura nos itens pendentes
         foreach ($this->itens as $idx => $item) {
             if ((int)$item['variacao_id'] === (int)$barcode->produto_variacao_id) {
-                if ($idx === $this->itemAtual) {
-                    $this->scanFeedback = 'ok';
-                    $this->toast('Item confirmado por código!');
-                    $this->definirStatus('ok');
-                    $this->confirmarProximo();
-                } else {
-                    $this->itemAtual = $idx;
-                    $this->scanFeedback = 'ok';
-                    $this->toast('Indo para: ' . $item['nome']);
-                }
+                // Navega até o item
+                $this->itemAtual = $idx;
+                // Auto-confirma como OK e avança
+                $this->definirStatus('ok');
+                $this->confirmarProximo();
+                $this->scanFeedback = 'ok';
+                $this->toast($item['nome'] . ' confirmado!');
                 return;
             }
         }
 
+        // Procura nos já processados
         foreach ($this->processados as $pr) {
             if ((int)$pr['variacao_id'] === (int)$barcode->produto_variacao_id) {
                 $this->scanFeedback = 'ja_processado';
@@ -371,6 +370,22 @@ class SeparacaoManager extends Component
         }
     }
 
+    public function forcarLiberacao(): void
+    {
+        // Força a liberação mesmo se outro usuário estiver separando
+        // Permite que admin/supervisor reassuma o pedido
+        try {
+            PedidoSeparacao::where('pedido_id', $this->pedidoId)
+                ->whereIn('status', ['em_andamento', 'pausada'])
+                ->update(['status' => 'cancelada', 'fim_at' => now(), 'observacao' => 'Liberado por ' . auth()->user()?->name]);
+        } catch (\Exception $e) {
+            \Log::warning('forcarLiberacao: ' . $e->getMessage());
+        }
+        $this->bloqueioErro = '';
+        $this->separacaoId = null;
+        $this->iniciarOuRetomarSeparacao();
+    }
+
     public function abrirConferencia(): void
     {
         $this->conferenciaAprovada = false;
@@ -403,7 +418,7 @@ class SeparacaoManager extends Component
             $pedido = Pedido::find($this->pedidoId);
             if ($pedido) {
                 $pendentes = PedidoItem::where('pedido_id', $pedido->id)
-                    ->whereIn('status_item', ['pendente', 'faltou', 'cancelado'])->count();
+                    ->where('status_item', 'pendente')->count();
                 $novoStatus = $pendentes === 0 ? 'pronto_retirada' : 'em_separacao';
                 $this->logStatusHistorico($pedido, $pedido->status, $novoStatus, 'Separação finalizada');
                 $pedido->update(['status' => $novoStatus]);

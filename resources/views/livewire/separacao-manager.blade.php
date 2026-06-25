@@ -99,9 +99,12 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
             </div>
             <h2 style="font-size:18px;font-weight:800;color:var(--text);margin:0 0 6px;">Pedido em uso</h2>
             <p style="font-size:14px;color:var(--muted);margin:0 0 20px;">{{ $this->bloqueioErro }}</p>
-            <a href="/separacao" wire:navigate style="padding:12px 28px;border:0;border-radius:10px;background:#f59e0b;color:#fff;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;">
+            <a href="/separacao" wire:navigate style="padding:12px 28px;border:0;border-radius:10px;background:#f59e0b;color:#fff;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block;">
                 <i class="fas fa-arrow-left" style="margin-right:6px;"></i> Voltar
             </a>
+            <button wire:click="forcarLiberacao" style="margin-top:10px;padding:12px 28px;border:1px solid rgba(255,255,255,0.3);border-radius:10px;background:rgba(255,255,255,0.08);color:#fff;font-weight:700;font-size:14px;cursor:pointer;backdrop-filter:blur(4px);">
+                <i class="fas fa-unlock" style="margin-right:6px;"></i> Tomar Posse (forçar liberação)
+            </button>
         </div>
     @else
 

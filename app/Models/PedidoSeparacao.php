@@ -8,6 +8,8 @@ class PedidoSeparacao extends Model
 {
     protected $table = 'pedidos_separacoes';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'pedido_id', 'separador_id', 'status',
         'inicio_at', 'fim_at', 'observacao',
