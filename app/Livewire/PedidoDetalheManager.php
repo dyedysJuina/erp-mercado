@@ -210,6 +210,14 @@ class PedidoDetalheManager extends Component
     {
         $p = $this->pedido;
         if ($p && $p->status === 'rascunho') {
+            DB::table('pedidos_status_historico')->insert([
+                'pedido_id' => $p->id,
+                'usuario_id' => auth()->id(),
+                'status_anterior' => 'rascunho',
+                'status_novo' => 'enviado',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
             $p->update(['status' => 'enviado']);
             $this->toast('Pedido marcado como enviado!');
         }

@@ -51,6 +51,11 @@
                 @if ($p->status === 'rascunho')
                     <button wire:click="enviar" class="btn-sm btn-primary" style="padding:8px 16px;font-size:12px;"><i class="fas fa-paper-plane"></i> Marcar Enviado</button>
                 @endif
+                @if (in_array($p->status, ['enviado', 'parcialmente_recebido', 'recebido']))
+                    <a href="/pedidos/{{ $p->id }}/pdf" target="_blank" class="btn-sm btn-secondary" style="padding:8px 16px;font-size:12px;text-decoration:none;">
+                        <i class="fas fa-print"></i> Imprimir
+                    </a>
+                @endif
             </div>
 
             {{-- PROGRESSO --}}

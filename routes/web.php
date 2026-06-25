@@ -75,6 +75,10 @@ Route::middleware('auth')->group(function () {
     $r('/pedidos', \App\Livewire\PedidoListaManager::class, 'pedidos');
     $r('/pedidos-online', \App\Livewire\PedidoOnlineManager::class, 'pedidos-online', 'pedidos');
     Route::get('/pedidos/{id}', \App\Livewire\PedidoDetalheManager::class)->name('pedidos.detalhe')->middleware(['auth', 'permission:pedidos']);
+    Route::get('/pedidos/{id}/imprimir', function (int $id) {
+        $pedido = App\Models\CompraPedido::with(['fornecedor', 'loja', 'itens.variacao.unidadeMedida'])->findOrFail($id);
+        return view('fiscal.pedido-pdf', compact('pedido'));
+    })->name('pedidos.imprimir')->middleware(['auth', 'permission:pedidos']);
     $r('/vendas', \App\Livewire\VendaManager::class, 'vendas', 'pdv');
     $r('/financeiro', \App\Livewire\FinanceiroManager::class, 'financeiro');
     $r('/financeiro/conciliacao', \App\Livewire\ConciliacaoManager::class, 'financeiro.conciliacao');
