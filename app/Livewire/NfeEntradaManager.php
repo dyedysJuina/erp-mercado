@@ -133,6 +133,8 @@ class NfeEntradaManager extends Component
         $this->validate([
             'loja_id' => ['required', 'exists:lojas,id'],
             'fornecedor_id' => ['required'],
+            'numero_nota' => ['nullable', 'integer', 'min:1', 'max:999999999'],
+            'chave_nfe' => ['nullable', 'string', 'size:44', 'regex:/^[0-9]{44}$/'],
             'data_emissao' => ['required', 'date', 'before_or_equal:today'],
             'data_recebimento' => ['required', 'date'],
             'itens' => ['required', 'array', 'min:1'],

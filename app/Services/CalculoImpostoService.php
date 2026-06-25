@@ -8,14 +8,14 @@ use App\Models\RegraFiscalNcm;
 
 class CalculoImpostoService
 {
-    public function calcular(ProdutoVariacao $variacao, float $valorUnitario): array
+    public function calcular(ProdutoVariacao $variacao, float $valorUnitario, ?\App\Models\FiscalPerfil $perfil = null): array
     {
         $csosn = $this->resolverCsosn($variacao);
         $origem = $variacao->origem_mercadoria ?? '0';
 
-        $icmsAliquota = $variacao->aliquota_icms;
-        $pisAliquota  = $variacao->aliquota_pis;
-        $cofinsAliquota = $variacao->aliquota_cofins;
+        $icmsAliquota = $variacao->aliquota_icms ?? $perfil?->aliquota_icms;
+        $pisAliquota  = $variacao->aliquota_pis ?? $perfil?->aliquota_pis;
+        $cofinsAliquota = $variacao->aliquota_cofins ?? $perfil?->aliquota_cofins;
 
         return [
             'icms'   => $this->calcularIcms($csosn, $origem, $valorUnitario, $icmsAliquota),
@@ -37,7 +37,7 @@ class CalculoImpostoService
             $ncmCodigo = $ncm?->codigo;
         }
 
-        if ($ncmCodigo) {
+        if ($ncmCodigo && preg_match('/^\d{8}$/', $ncmCodigo)) {
             $sugerido = RegraFiscalNcm::sugerirCsosn($ncmCodigo);
             if ($sugerido !== '102') return $sugerido;
         }

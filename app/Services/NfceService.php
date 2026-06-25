@@ -58,7 +58,7 @@ class NfceService
                 $quant = $item->quantidade;
                 $total = $item->valor_total;
 
-                $tributos = $impostoService->calcular($variacao, $total);
+                $tributos = $impostoService->calcular($variacao, $total, $perfil);
 
                 FiscalDocumentoItem::create([
                     'fiscal_documento_id' => $doc->id,
@@ -162,7 +162,9 @@ class NfceService
         $ide->addChild('mod', '65');
         $ide->addChild('serie', $doc->serie);
         $ide->addChild('nNF', $doc->numero);
-        $ide->addChild('dhEmi', now()->setTimezone(config('app.timezone', 'America/Cuiaba'))->format('Y-m-d\TH:i:sP'));
+        $uf = $loja->cidade?->estado?->uf ?? $loja->uf ?? 'MT';
+        $tz = $this->ufParaTimezone($uf);
+        $ide->addChild('dhEmi', now()->setTimezone($tz)->format('Y-m-d\TH:i:sP'));
         $ide->addChild('tpNF', '1');
         $ide->addChild('idDest', '1');
         $ide->addChild('cMunFG', $this->codigoMunicipio($cidadeNome, $uf));
@@ -385,6 +387,19 @@ class NfceService
             'MT' => '51', 'GO' => '52', 'DF' => '53',
         ];
         return $mapa[strtoupper($uf)] ?? '51';
+    }
+
+    private function ufParaTimezone(string $uf): string
+    {
+        return match (strtoupper($uf)) {
+            'AC' => 'America/Rio_Branco',
+            'AM', 'RO', 'RR' => 'America/Manaus',
+            'MT', 'MS' => 'America/Cuiaba',
+            'GO', 'TO', 'DF', 'MG' => 'America/Sao_Paulo',
+            'PA', 'AP' => 'America/Belem',
+            'MA', 'PI', 'CE', 'RN', 'PB', 'PE', 'AL', 'SE', 'BA' => 'America/Bahia',
+            default => 'America/Sao_Paulo',
+        };
     }
 
     private function formaPagamentoParaCodigo(string $tipo): string

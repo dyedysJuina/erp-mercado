@@ -441,7 +441,7 @@ class VendaManager extends Component
             return;
         }
 
-        $loja = Loja::with('cidade.estado')->find((int)$this->loja_id);
+        $loja = Loja::with('cidade.estado')->find((int)$venda->loja_id);
         if (!$loja) { $this->nfceStatus = 'erro'; return; }
 
         try {
