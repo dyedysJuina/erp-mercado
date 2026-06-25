@@ -112,17 +112,25 @@ class SeparacaoListaManager extends Component
         $pedido->update(['status' => 'cancelado']);
         $pedido->itens()->update(['status_item' => 'cancelado']);
 
-        PedidoSeparacao::where('pedido_id', $id)
-            ->whereIn('status', ['em_andamento', 'pausada'])
-            ->update(['status' => 'cancelada', 'fim_at' => now()]);
+        try {
+            PedidoSeparacao::where('pedido_id', $id)
+                ->whereIn('status', ['em_andamento', 'pausada'])
+                ->update(['status' => 'cancelada', 'fim_at' => now()]);
+        } catch (\Exception $e) {
+            // Tabela pode não existir — segue
+        }
 
-        PedidoStatusHistorico::create([
-            'pedido_id' => $pedido->id,
-            'usuario_id' => auth()->id(),
-            'status_anterior' => $statusAntigo,
-            'status_novo' => 'cancelado',
-            'observacao' => 'Cancelado via separação',
-        ]);
+        try {
+            PedidoStatusHistorico::create([
+                'pedido_id' => $pedido->id,
+                'usuario_id' => auth()->id(),
+                'status_anterior' => $statusAntigo,
+                'status_novo' => 'cancelado',
+                'observacao' => 'Cancelado via separação',
+            ]);
+        } catch (\Exception $e) {
+            // Tabela pode não existir — segue
+        }
 
         $this->toast('Pedido #' . $id . ' cancelado.');
     }

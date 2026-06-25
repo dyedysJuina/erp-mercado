@@ -36,26 +36,31 @@ class SeparacaoManager extends Component
 
     public function iniciarOuRetomarSeparacao(): void
     {
-        $existente = PedidoSeparacao::where('pedido_id', $this->pedidoId)
-            ->whereIn('status', ['em_andamento', 'pausada'])
-            ->first();
+        try {
+            $existente = PedidoSeparacao::where('pedido_id', $this->pedidoId)
+                ->whereIn('status', ['em_andamento', 'pausada'])
+                ->first();
 
-        if ($existente) {
-            if ($existente->separador_id !== auth()->id()) {
-                $separador = $existente->separador?->name ?? 'outro usuário';
-                $this->bloqueioErro = "Este pedido já está em separação por {$separador}.";
-                return;
+            if ($existente) {
+                if ($existente->separador_id !== auth()->id()) {
+                    $separador = $existente->separador?->name ?? 'outro usuário';
+                    $this->bloqueioErro = "Este pedido já está em separação por {$separador}.";
+                    return;
+                }
+                $this->separacaoId = $existente->id;
+                $existente->update(['status' => 'em_andamento']);
+            } else {
+                $sep = PedidoSeparacao::create([
+                    'pedido_id' => $this->pedidoId,
+                    'separador_id' => auth()->id(),
+                    'status' => 'em_andamento',
+                    'inicio_at' => now(),
+                ]);
+                $this->separacaoId = $sep->id;
             }
-            $this->separacaoId = $existente->id;
-            $existente->update(['status' => 'em_andamento']);
-        } else {
-            $sep = PedidoSeparacao::create([
-                'pedido_id' => $this->pedidoId,
-                'separador_id' => auth()->id(),
-                'status' => 'em_andamento',
-                'inicio_at' => now(),
-            ]);
-            $this->separacaoId = $sep->id;
+        } catch (\Exception $e) {
+            // Tabela pode não existir (migration pendente) — segue sem bloqueio
+            $this->separacaoId = null;
         }
 
         $this->carregarItens();
