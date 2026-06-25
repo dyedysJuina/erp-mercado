@@ -340,9 +340,9 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
                         <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">Volumes / Sacolas</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
-                        <button wire:click="$set('volumes', Math.max(1, parseInt(volumes || 1) - 1))" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">−</button>
+                        <button @click="$wire.volumes = Math.max(1, parseInt($wire.volumes || 1) - 1)" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">−</button>
                         <input type="number" wire:model="volumes" style="width:56px;height:32px;text-align:center;border:2px solid #f59e0b;border-radius:8px;font-size:16px;font-weight:800;outline:none;background:var(--surface);">
-                        <button wire:click="$set('volumes', parseInt(volumes || 1) + 1)" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">+</button>
+                        <button @click="$wire.volumes = parseInt($wire.volumes || 1) + 1" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">+</button>
                         <span style="font-size:12px;color:var(--muted);">saco(s)</span>
                     </div>
                 </div>
