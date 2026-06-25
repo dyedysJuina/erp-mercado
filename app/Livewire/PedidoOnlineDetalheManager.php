@@ -51,7 +51,7 @@ class PedidoOnlineDetalheManager extends Component
                 PedidoItem::where('pedido_id', $pedido->id)
                     ->where('status_item', '!=', 'cancelado')
                     ->update(['status_item' => 'separado']);
-            } elseif (in_array($status, ['em_separacao', 'pronto_retirada', 'pronto_entrega'])) {
+            } elseif (in_array($status, ['confirmado', 'em_separacao', 'pronto_retirada', 'pronto_entrega'])) {
                 PedidoItem::where('pedido_id', $pedido->id)
                     ->where('status_item', 'pendente')
                     ->update(['status_item' => 'separado']);
@@ -94,6 +94,7 @@ class PedidoOnlineDetalheManager extends Component
             }
         });
 
+        $this->forgetComputed('pedido');
         $this->toast("Status alterado para '{$status}'!");
     }
 
