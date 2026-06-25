@@ -67,12 +67,13 @@
                 </div>
             </div>
         @else
-            {{-- ITEM CURRENT --}}
-            <div style="flex:1;padding:16px;display:flex;flex-direction:column;">
+            {{-- ITEM CURRENT — usado flex:1 e padding-bottom para o footer fixo --}}
+            <div style="flex:1;padding:16px 16px 90px;display:flex;flex-direction:column;">
                 {{-- Progress --}}
                 <div style="margin-bottom:14px;">
                     <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;">
-                        <span>PROGRESSO DO PEDIDO <span id="txt-progresso-itens">{{ $prog['feitos'] }}/{{ $prog['total'] }}</span></span>
+                        <span>PROGRESSO <span id="txt-progresso-itens">{{ $prog['feitos'] }}/{{ $prog['total'] }}</span></span>
+                        <span>{{ $prog['pct'] }}%</span>
                     </div>
                     <div style="height:8px;border-radius:4px;background:color-mix(in srgb,var(--text)8%,transparent);overflow:hidden;">
                         <div style="height:100%;border-radius:4px;width:{{ $prog['pct'] }}%;background:var(--success);transition:width 0.3s;"></div>
@@ -117,31 +118,33 @@
                         <input wire:model="itens.{{ $this->itemAtual }}.observacao" type="text" placeholder="Motivo..." style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;outline:none;">
                     </div>
                 </div>
-
-                {{-- ACTIONS --}}
-                <div style="display:flex;gap:8px;margin-top:auto;">
-                    <button wire:click="pularItem" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;font-weight:700;font-size:13px;color:var(--text);">Pular</button>
-                    <button wire:click="confirmarProximo" style="flex:1;padding:12px;border:0;border-radius:10px;background:var(--success);color:var(--on-success);cursor:pointer;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px;">
-                        Confirmar <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-
-                {{-- PROCESSADOS --}}
-                @if (count($this->processados) > 0)
-                    <div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-                        <div style="background:color-mix(in srgb,var(--text)4%,transparent);padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;">
-                            <span>Itens processados</span>
-                            <span style="background:color-mix(in srgb,var(--text)8%,transparent);padding:1px 6px;border-radius:4px;">{{ count($this->processados) }}</span>
-                        </div>
-                        @foreach ($this->processados as $pr)
-                            <div style="display:flex;justify-content:space-between;padding:6px 12px;border-top:1px solid color-mix(in srgb,var(--text)6%,transparent);font-size:11px;">
-                                <span style="font-weight:600;text-transform:uppercase;">{{ $pr['nome'] }}</span>
-                                <span style="color:{{ $pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'var(--success)' : ($pr['qtd_separada'] > 0 ? 'var(--warning)' : 'var(--danger)') }};">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
             </div>
+
+            {{-- ACTIONS FIXAS NO RODAPÉ --}}
+            <div style="position:sticky;bottom:0;z-index:10;padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;">
+                <button wire:click="pularItem" style="flex:1;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;font-weight:700;font-size:14px;color:var(--text);">
+                    <i class="fas fa-forward" style="margin-right:6px;"></i> Pular
+                </button>
+                <button wire:click="confirmarProximo" style="flex:2;padding:14px;border:0;border-radius:10px;background:var(--success);color:var(--on-success);cursor:pointer;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    Confirmar <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            {{-- PROCESSADOS (mini lista abaixo do botao) --}}
+            @if (count($this->processados) > 0)
+                <div style="border-top:1px solid var(--border);background:color-mix(in srgb,var(--text)2%,transparent);">
+                    <div style="padding:8px 16px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;">
+                        <span>Itens processados</span>
+                        <span>{{ count($this->processados) }}</span>
+                    </div>
+                    @foreach ($this->processados as $pr)
+                        <div style="display:flex;justify-content:space-between;padding:6px 16px;border-top:1px solid color-mix(in srgb,var(--text)6%,transparent);font-size:11px;">
+                            <span style="font-weight:600;text-transform:uppercase;">{{ $pr['nome'] }}</span>
+                            <span style="color:{{ $pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'var(--success)' : ($pr['qtd_separada'] > 0 ? 'var(--warning)' : 'var(--danger)') }};">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         @endif
     </div>
 </div>

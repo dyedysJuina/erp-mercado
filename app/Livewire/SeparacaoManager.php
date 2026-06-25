@@ -26,20 +26,33 @@ class SeparacaoManager extends Component
     public function carregarItens(): void
     {
         $pedido = Pedido::with('itens.variacao')->findOrFail($this->pedidoId);
-        $this->itens = $pedido->itens->filter(fn($i) => $i->status_item !== 'cancelado')
-            ->values()
-            ->map(fn($i) => [
-                'id' => $i->id,
-                'variacao_id' => $i->produto_variacao_id,
-                'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
-                'qtd_pedido' => (float)$i->quantidade_solicitada,
-                'qtd_separada' => (float)($i->quantidade_separada ?: 0),
-                'status' => $i->status_item,
-                'observacao' => $i->observacao_separacao ?? '',
-                'sku' => $i->variacao?->sku ?? '',
-            ])->toArray();
 
-        $this->processados = [];
+        $todos = $pedido->itens->filter(fn($i) => $i->status_item !== 'cancelado')->values();
+        $jaProcessados = $todos->filter(fn($i) => in_array($i->status_item, ['separado', 'faltou', 'substituido']));
+        $pendentes = $todos->filter(fn($i) => $i->status_item === 'pendente');
+
+        $this->processados = $jaProcessados->map(fn($i) => [
+            'id' => $i->id,
+            'variacao_id' => $i->produto_variacao_id,
+            'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
+            'qtd_pedido' => (float)$i->quantidade_solicitada,
+            'qtd_separada' => (float)($i->quantidade_separada ?: 0),
+            'status' => $i->status_item,
+            'observacao' => $i->observacao_separacao ?? '',
+            'sku' => $i->variacao?->sku ?? '',
+        ])->toArray();
+
+        $this->itens = $pendentes->map(fn($i) => [
+            'id' => $i->id,
+            'variacao_id' => $i->produto_variacao_id,
+            'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
+            'qtd_pedido' => (float)$i->quantidade_solicitada,
+            'qtd_separada' => (float)($i->quantidade_separada ?: 0),
+            'status' => $i->status_item,
+            'observacao' => $i->observacao_separacao ?? '',
+            'sku' => $i->variacao?->sku ?? '',
+        ])->toArray();
+
         $this->itemAtual = 0;
     }
 
@@ -60,7 +73,7 @@ class SeparacaoManager extends Component
 
     public function progresso(): array
     {
-        $total = count($this->itens);
+        $total = count($this->itens) + count($this->processados);
         $feitos = count($this->processados);
         return [
             'total' => $total,

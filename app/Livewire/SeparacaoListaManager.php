@@ -31,7 +31,8 @@ class SeparacaoListaManager extends Component
             });
         }
 
-        $pedidos = $q->get();
+        $totalAll = (clone $q)->count();
+        $pedidos = $q->paginate(20);
         $agora = now();
         $atrasados = [];
         $normais = [];
@@ -39,16 +40,28 @@ class SeparacaoListaManager extends Component
         foreach ($pedidos as $p) {
             $totalItens = $p->itens->count();
             $separados = $p->itens->whereIn('status_item', ['separado'])->count();
-            $pct = $totalItens > 0 ? round(($separados / $totalItens) * 100) : 0;
-            $minutos = $p->created_at->diffInMinutes($agora);
-            $atrasado = $minutos > 30 && !in_array($p->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado']);
+            $faltou = $p->itens->whereIn('status_item', ['faltou'])->count();
+            $pendentes = $p->itens->whereIn('status_item', ['pendente'])->count();
+            $substituidos = $p->itens->whereIn('status_item', ['substituido'])->count();
+            $pct = $totalItens > 0 ? round((($separados + $substituidos) / $totalItens) * 100) : 0;
 
-            if ($minutos < 60) {
-                $tempo = $minutos . 'min';
-            } elseif ($minutos < 1440) {
-                $tempo = round($minutos / 60) . 'h';
+            $segundos = $p->created_at->diffInSeconds($agora);
+            $atrasado = $segundos > 1800 && !in_array($p->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado']);
+
+            if ($segundos < 60) {
+                $tempo = $segundos . 's';
+            } elseif ($segundos < 3600) {
+                $m = floor($segundos / 60);
+                $s = $segundos % 60;
+                $tempo = $m . 'min ' . ($s > 0 ? $s . 's' : '');
+            } elseif ($segundos < 86400) {
+                $h = floor($segundos / 3600);
+                $m = floor(($segundos % 3600) / 60);
+                $tempo = $h . 'h ' . ($m > 0 ? $m . 'min' : '');
             } else {
-                $tempo = round($minutos / 1440) . 'd';
+                $d = floor($segundos / 86400);
+                $h = floor(($segundos % 86400) / 3600);
+                $tempo = $d . 'd ' . ($h > 0 ? $h . 'h' : '');
             }
 
             $data = [
@@ -56,17 +69,23 @@ class SeparacaoListaManager extends Component
                 'cliente_nome' => $p->cliente?->nome ?? '—',
                 'cliente_whatsapp' => $p->cliente?->whatsapp ?? '',
                 'total_itens' => $totalItens, 'total_separados' => $separados,
+                'total_faltou' => $faltou, 'total_pendentes' => $pendentes,
+                'total_substituidos' => $substituidos,
                 'progresso' => $pct, 'total' => (float)$p->total,
-                'minutos_atraso' => $minutos, 'tempo_atraso' => $tempo,
+                'segundos_atraso' => $segundos, 'tempo_atraso' => $tempo,
                 'status' => $p->status,
                 'ja_iniciou' => $p->status === 'em_separacao',
+                'created_at' => $p->created_at->format('d/m/Y H:i'),
             ];
 
             if ($atrasado) { $atrasados[] = $data; }
             else { $normais[] = $data; }
         }
 
-        return ['atrasados' => $atrasados, 'normais' => $normais, 'total' => count($pedidos)];
+        return [
+            'atrasados' => $atrasados, 'normais' => $normais,
+            'total' => $totalAll, 'paginator' => $pedidos,
+        ];
     }
 
     public function totalPendentes(): int
