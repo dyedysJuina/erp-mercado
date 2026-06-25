@@ -3,15 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\Pedido;
-use App\Models\PedidoItem;
-use App\Models\User;
-use App\Models\ProdutoVariacao;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
 
 class PedidoOnlineManager extends Component
 {
@@ -24,24 +20,6 @@ class PedidoOnlineManager extends Component
     public string $dataInicio = '';
     public string $dataFim = '';
     public string $periodo = 'hoje';
-
-    public ?int $detalheId = null;
-    public ?int $pedidoEditando = null;
-
-    // Item management
-    public ?int $itemMudarStatus = null;
-    public string $itemNovoStatus = '';
-    public string $itemObs = '';
-
-    // Substitution
-    public ?int $itemSubstituir = null;
-    public string $buscaSubstituto = '';
-    public array $resultadosSubstituto = [];
-    public ?int $substitutoId = null;
-
-    // Assignment
-    public string $separadorId = '';
-    public string $entregadorId = '';
 
     public string $toastMsg = '';
     public bool $toastShow = false;
@@ -70,12 +48,6 @@ class PedidoOnlineManager extends Component
         ];
     }
 
-    #[Computed]
-    public function operadores(): array
-    {
-        return User::where('ativo', true)->orderBy('name')->get(['id', 'name'])->toArray();
-    }
-
     public function listagem()
     {
         $q = Pedido::where('origem', 'site');
@@ -89,7 +61,7 @@ class PedidoOnlineManager extends Component
         if ($this->periodo === 'hoje') {
             $q->whereDate('created_at', today());
         } elseif ($this->periodo === 'semana') {
-            $q->whereDate('created_at', '>=', now()->startOfWeek(Carbon\Carbon::MONDAY));
+            $q->whereDate('created_at', '>=', now()->startOfWeek(Carbon::MONDAY));
         }
         if ($this->filtroStatus) $q->where('status', $this->filtroStatus);
         if ($this->filtroEntrega) $q->where('tipo_entrega', $this->filtroEntrega);
@@ -104,173 +76,6 @@ class PedidoOnlineManager extends Component
         }
 
         return $q->paginate(30);
-    }
-
-    public function verDetalhe(int $id): void
-    {
-        $this->detalheId = $id;
-        $this->pedidoEditando = $id;
-        $p = Pedido::with('separador', 'entregador')->find($id);
-        if ($p) {
-            $this->separadorId = (string)$p->separador_id;
-            $this->entregadorId = (string)$p->entregador_id;
-        }
-    }
-
-    public function fecharDetalhe(): void
-    {
-        $this->detalheId = null;
-        $this->pedidoEditando = null;
-    }
-
-    #[Computed]
-    public function detalhe(): ?array
-    {
-        if (!$this->detalheId) return null;
-        return Pedido::with([
-            'cliente', 'separador', 'entregador',
-            'itens' => fn($q) => $q->with('variacao', 'substituto')
-        ])->find($this->detalheId)?->toArray();
-    }
-
-    public function alterarStatus(int $id, string $status): void
-    {
-        $allowed = ['recebido', 'confirmado', 'em_separacao', 'pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado'];
-        if (!in_array($status, $allowed)) {
-            $this->toast('Status inválido.');
-            return;
-        }
-
-        $pedido = Pedido::with('itens')->findOrFail($id);
-        $oldStatus = $pedido->status;
-
-        DB::transaction(function () use ($pedido, $status, $oldStatus) {
-            $pedido->update(['status' => $status]);
-
-            DB::table('pedidos_status_historico')->insert([
-                'pedido_id' => $pedido->id,
-                'usuario_id' => auth()->id(),
-                'status_anterior' => $oldStatus,
-                'status_novo' => $status,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Atualiza status dos itens conforme o status do pedido
-            if ($status === 'entregue') {
-                PedidoItem::where('pedido_id', $pedido->id)
-                    ->where('status_item', '!=', 'cancelado')
-                    ->update(['status_item' => 'separado']);
-            } elseif (in_array($status, ['em_separacao', 'pronto_retirada', 'pronto_entrega'])) {
-                PedidoItem::where('pedido_id', $pedido->id)
-                    ->where('status_item', 'pendente')
-                    ->update(['status_item' => 'separado']);
-            }
-
-            // Notifica cliente sobre mudança de status
-            if ($pedido->cliente_id) {
-                \App\Models\Notificacao::create([
-                    'usuario_id' => null,
-                    'canal' => 'sistema',
-                    'titulo' => 'Pedido #' . $pedido->id,
-                    'mensagem' => 'Seu pedido foi atualizado para: ' . $status,
-                    'link' => '/vitrine/pedidos',
-                    'status' => 'pendente',
-                    'cliente_id' => $pedido->cliente_id,
-                ]);
-            }
-
-            // Se cancelar, restaura estoque
-            if ($status === 'cancelado') {
-                foreach ($pedido->itens as $item) {
-                    if (in_array($item->status_item, ['pendente', 'separado', 'substituido'])) {
-                        $qtd = (float) $item->quantidade_solicitada;
-                        \App\Models\EstoqueSaldo::where('loja_id', $pedido->loja_id)
-                            ->where('produto_variacao_id', $item->produto_variacao_id)
-                            ->increment('quantidade_atual', $qtd);
-
-                        DB::table('estoque_movimentacoes')->insert([
-                            'loja_id' => $pedido->loja_id,
-                            'produto_variacao_id' => $item->produto_variacao_id,
-                            'usuario_id' => auth()->id(),
-                            'origem_tipo' => 'pedido',
-                            'origem_id' => $pedido->id,
-                            'tipo' => 'entrada_compra',
-                            'quantidade' => $qtd,
-                            'justificativa' => 'Cancelamento pedido #' . $pedido->id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
-                }
-            }
-        });
-
-        $this->toast("Pedido #{$id} alterado para '{$status}'.");
-    }
-
-    public function salvarOperadores(): void
-    {
-        if (!$this->pedidoEditando) return;
-        Pedido::findOrFail($this->pedidoEditando)->update([
-            'separador_id' => $this->separadorId ? (int)$this->separadorId : null,
-            'entregador_id' => $this->entregadorId ? (int)$this->entregadorId : null,
-        ]);
-        $this->toast('Operadores atribuidos.');
-    }
-
-    public function alterarStatusItem(int $itemId, string $status): void
-    {
-        $item = PedidoItem::findOrFail($itemId);
-        $item->update([
-            'status_item' => $status,
-            'separado_por' => $status === 'separado' ? auth()->id() : $item->separado_por,
-        ]);
-        $this->toast('Item atualizado.');
-    }
-
-    public function sugerirSubstituto(int $itemId): void
-    {
-        $this->itemSubstituir = $itemId;
-        $this->buscaSubstituto = '';
-        $this->resultadosSubstituto = [];
-        $this->substitutoId = null;
-    }
-
-    public function buscarSubstituto(): void
-    {
-        $q = trim($this->buscaSubstituto);
-        if (strlen($q) < 2) { $this->resultadosSubstituto = []; return; }
-        $this->resultadosSubstituto = ProdutoVariacao::where('ativo', true)
-            ->where(function ($w) use ($q) {
-                $w->where('nome_completo', 'like', "%{$q}%")->orWhere('sku', 'like', "%{$q}%");
-            })
-            ->with('marca')
-            ->limit(10)
-            ->get()
-            ->toArray();
-    }
-
-    public function confirmarSubstituicao(): void
-    {
-        if (!$this->itemSubstituir || !$this->substitutoId) return;
-        DB::table('pedidos_itens')->where('id', $this->itemSubstituir)->update([
-            'status_item' => 'substituido',
-            'substituto_produto_variacao_id' => $this->substitutoId,
-        ]);
-        $this->itemSubstituir = null;
-        $this->buscaSubstituto = '';
-        $this->resultadosSubstituto = [];
-        $this->substitutoId = null;
-        $this->toast('Substituicao registrada.');
-    }
-
-    public function cancelarSubstituicao(): void
-    {
-        $this->itemSubstituir = null;
-        $this->buscaSubstituto = '';
-        $this->resultadosSubstituto = [];
-        $this->substitutoId = null;
     }
 
     public function statusDoPedido(Pedido $p): array

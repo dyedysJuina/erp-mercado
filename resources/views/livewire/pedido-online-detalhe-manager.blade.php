@@ -91,7 +91,7 @@
                                     <td class="data-table-td text-right">R$ {{ number_format((float)$item->preco_unitario, 2, ',', '.') }}</td>
                                     <td class="data-table-td text-right font-bold">R$ {{ number_format((float)$item->total_item, 2, ',', '.') }}</td>
                                     <td class="data-table-td text-center">
-                                        @php $st = ['pendente'=>'Pendente','separado'=>'Separado','substituido'=>'Substituído','cancelado'=>'Cancelado'][$item->status_item] ?? $item->status_item; @endphp
+                                        @php $st = ['pendente'=>'Aguardando','separado'=>'Separado','substituido'=>'Substituído','cancelado'=>'Cancelado'][$item->status_item] ?? $item->status_item; @endphp
                                         <span class="badge-sm badge-warning" style="font-size:9px;">{{ $st }}</span>
                                     </td>
                                 </tr>
