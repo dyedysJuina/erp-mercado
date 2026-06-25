@@ -12,7 +12,7 @@
                 <span style="font-weight:800;font-size:16px;letter-spacing:1px;">SEPARACAO</span>
             </div>
             <span style="background:var(--primary-600);font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;">
-                <i class="fas fa-bell" style="margin-right:4px;"></i> {{ $this->totalPendentes }} pend.
+                <i class="fas fa-bell" style="margin-right:4px;"></i> {{ $this->totalPendentes() }} pend.
             </span>
         </header>
 
@@ -26,7 +26,7 @@
 
         {{-- LISTA --}}
         <div style="padding:12px 16px;">
-            @php $dados = $this->pendentes; @endphp
+            @php $dados = $this->pendentes(); @endphp
 
             @if (!empty($dados['atrasados']))
                 <div style="margin-bottom:20px;">

@@ -5,7 +5,6 @@ namespace App\Livewire;
 use App\Models\Pedido;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
 
 class SeparacaoListaManager extends Component
 {
@@ -17,8 +16,6 @@ class SeparacaoListaManager extends Component
 
     protected $queryString = ['busca'];
 
-    #[Computed]
-    #[Computed]
     public function pendentes()
     {
         $q = Pedido::where('origem', 'site')
@@ -35,7 +32,6 @@ class SeparacaoListaManager extends Component
         }
 
         $pedidos = $q->get();
-
         $agora = now();
         $atrasados = [];
         $normais = [];
@@ -48,34 +44,22 @@ class SeparacaoListaManager extends Component
             $atrasado = $minutos > 30 && !in_array($p->status, ['pronto_retirada', 'pronto_entrega', 'entregue', 'cancelado']);
 
             $data = [
-                'id' => $p->id,
-                'codigo' => $p->codigo,
+                'id' => $p->id, 'codigo' => $p->codigo,
                 'cliente_nome' => $p->cliente?->nome ?? '—',
                 'cliente_whatsapp' => $p->cliente?->whatsapp ?? '',
-                'total_itens' => $totalItens,
-                'total_separados' => $separados,
-                'progresso' => $pct,
-                'total' => (float)$p->total,
-                'minutos_atraso' => $minutos,
-                'status' => $p->status,
+                'total_itens' => $totalItens, 'total_separados' => $separados,
+                'progresso' => $pct, 'total' => (float)$p->total,
+                'minutos_atraso' => $minutos, 'status' => $p->status,
                 'ja_iniciou' => $p->status === 'em_separacao',
             ];
 
-            if ($atrasado) {
-                $atrasados[] = $data;
-            } else {
-                $normais[] = $data;
-            }
+            if ($atrasado) { $atrasados[] = $data; }
+            else { $normais[] = $data; }
         }
 
-        return [
-            'atrasados' => $atrasados,
-            'normais' => $normais,
-            'total' => count($pedidos),
-        ];
+        return ['atrasados' => $atrasados, 'normais' => $normais, 'total' => count($pedidos)];
     }
 
-    #[Computed]
     public function totalPendentes(): int
     {
         return Pedido::where('origem', 'site')
