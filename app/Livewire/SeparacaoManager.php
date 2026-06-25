@@ -7,6 +7,7 @@ use App\Models\PedidoItem;
 use App\Models\PedidoSeparacao;
 use App\Models\PedidoSeparacaoItem;
 use App\Models\PedidoStatusHistorico;
+use App\Models\EstoqueSaldo;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class SeparacaoManager extends Component
     public bool $toastShow = false;
     public ?int $separacaoId = null;
     public string $bloqueioErro = '';
+    public string $scanFeedback = '';
 
     public function mount(int $id): void
     {
@@ -57,18 +59,35 @@ class SeparacaoManager extends Component
 
     public function carregarItens(): void
     {
-        $pedido = Pedido::with('itens.variacao')->findOrFail($this->pedidoId);
+        $pedido = Pedido::with('itens.variacao.produtoBase.categoria')->findOrFail($this->pedidoId);
         $todos = $pedido->itens->values();
 
+        $variacaoIds = $todos->pluck('produto_variacao_id')->filter()->unique()->toArray();
+
+        // Batch query localizacao via EstoqueSaldo -> EstoqueLocal
+        $locais = collect();
+        if (!empty($variacaoIds) && $pedido->loja_id) {
+            $saldos = EstoqueSaldo::with('local')
+                ->whereIn('produto_variacao_id', $variacaoIds)
+                ->where('loja_id', $pedido->loja_id)
+                ->where('quantidade_atual', '>', 0)
+                ->get()
+                ->groupBy('produto_variacao_id');
+            $locais = $saldos->map(fn($g) => $g->first()->local);
+        }
+
         $this->cancelados = $todos->filter(fn($i) => $i->status_item === 'cancelado')
-            ->map(fn($i) => $this->mapearItem($i))->toArray();
+            ->map(fn($i) => $this->mapearItem($i, $locais))->toArray();
 
         $restantes = $todos->filter(fn($i) => $i->status_item !== 'cancelado');
         $jaProcessados = $restantes->filter(fn($i) => in_array($i->status_item, ['separado', 'faltou', 'substituido', 'quantidade_alterada']));
         $pendentes = $restantes->filter(fn($i) => $i->status_item === 'pendente');
 
-        $this->processados = $jaProcessados->map(fn($i) => $this->mapearItem($i))->toArray();
-        $this->itens = $pendentes->map(fn($i) => $this->mapearItem($i))->toArray();
+        $this->processados = $jaProcessados->map(fn($i) => $this->mapearItem($i, $locais))->toArray();
+        $this->itens = $pendentes->map(fn($i) => $this->mapearItem($i, $locais))->toArray();
+
+        // Sort pendentes by categoria for grouping
+        usort($this->itens, fn($a, $b) => strcmp($a['categoria'] ?? '', $b['categoria'] ?? ''));
 
         // Garantir PedidoSeparacaoItem para itens pendentes
         if ($this->separacaoId) {
@@ -76,18 +95,17 @@ class SeparacaoManager extends Component
                 PedidoSeparacaoItem::firstOrCreate([
                     'separacao_id' => $this->separacaoId,
                     'pedido_item_id' => $item['id'],
-                ], [
-                    'quantidade_separada' => 0,
-                    'status' => 'pendente',
-                ]);
+                ], ['quantidade_separada' => 0, 'status' => 'pendente']);
             }
         }
 
         $this->itemAtual = 0;
     }
 
-    private function mapearItem($i): array
+    private function mapearItem($i, $locais = null): array
     {
+        $cat = $i->variacao?->produtoBase?->categoria;
+        $local = $locais ? $locais->get($i->produto_variacao_id) : null;
         return [
             'id' => $i->id,
             'variacao_id' => $i->produto_variacao_id,
@@ -97,6 +115,9 @@ class SeparacaoManager extends Component
             'status' => $i->status_item,
             'observacao' => $i->observacao_separacao ?? '',
             'sku' => $i->variacao?->sku ?? '',
+            'foto' => $i->variacao?->foto_capa_url ?? '',
+            'localizacao' => $local ? trim(implode(' > ', array_filter([$local->corredor, $local->prateleira]))) : null,
+            'categoria' => $cat->caminho ?? ($cat->nome ?? 'Geral'),
         ];
     }
 
@@ -168,12 +189,54 @@ class SeparacaoManager extends Component
         }
     }
 
+    public function buscarPorCodigoBarras(string $codigo): void
+    {
+        $this->scanFeedback = '';
+
+        $barcode = DB::table('produto_codigos_barras')
+            ->where('codigo', $codigo)
+            ->first();
+
+        if (!$barcode) {
+            $this->scanFeedback = 'nao_encontrado';
+            $this->toast('Código de barras não encontrado.');
+            return;
+        }
+
+        foreach ($this->itens as $idx => $item) {
+            if ((int)$item['variacao_id'] === (int)$barcode->produto_variacao_id) {
+                if ($idx === $this->itemAtual) {
+                    $this->scanFeedback = 'ok';
+                    $this->toast('Item atual confirmado por código de barras!');
+                    // Auto-confirmar
+                    $this->definirStatus('ok');
+                    $this->confirmarProximo();
+                } else {
+                    $this->itemAtual = $idx;
+                    $this->scanFeedback = 'ok';
+                    $this->toast('Navegando para item: ' . $item['nome']);
+                }
+                return;
+            }
+        }
+
+        foreach ($this->processados as $pr) {
+            if ((int)$pr['variacao_id'] === (int)$barcode->produto_variacao_id) {
+                $this->scanFeedback = 'ja_processado';
+                $this->toast('Este item já foi processado.');
+                return;
+            }
+        }
+
+        $this->scanFeedback = 'nao_encontrado';
+        $this->toast('Item não encontrado neste pedido.');
+    }
+
     public function confirmarProximo(): void
     {
         $item = $this->itens[$this->itemAtual] ?? null;
         if (!$item) return;
 
-        // Determinar status automatico se nenhum botao foi pressionado
         $statusFinal = $item['status'];
         if ($statusFinal === 'pendente') {
             if ($item['qtd_separada'] >= $item['qtd_pedido']) {
@@ -199,11 +262,7 @@ class SeparacaoManager extends Component
             if ($this->separacaoId) {
                 PedidoSeparacaoItem::updateOrCreate(
                     ['separacao_id' => $this->separacaoId, 'pedido_item_id' => $item['id']],
-                    [
-                        'quantidade_separada' => $item['qtd_separada'],
-                        'status' => $statusFinal,
-                        'observacao' => $item['observacao'],
-                    ]
+                    ['quantidade_separada' => $item['qtd_separada'], 'status' => $statusFinal, 'observacao' => $item['observacao']]
                 );
             }
         });
@@ -256,8 +315,7 @@ class SeparacaoManager extends Component
 
             if ($this->separacaoId) {
                 PedidoSeparacao::where('id', $this->separacaoId)->update([
-                    'status' => 'finalizada',
-                    'fim_at' => now(),
+                    'status' => 'finalizada', 'fim_at' => now(),
                 ]);
             }
         });

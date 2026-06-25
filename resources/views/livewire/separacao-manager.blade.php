@@ -1,5 +1,6 @@
 @push('head')
 <meta name="theme-color" content="#f59e0b">
+<script src="/js/html5-qrcode.min.js"></script>
 <style>
     .ring-2 { border-color: var(--warning) !important; box-shadow: 0 0 0 3px color-mix(in srgb,var(--warning)30%,transparent) !important; }
     .toast-fixed { position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:90%; }
@@ -17,13 +18,36 @@
     msg: @entangle('toastMsg'),
     confirmando: false,
     destacado: false,
+    showScanner: false,
+    scanError: null,
+    qr: null,
     handleKey(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'Escape') { this.closeScanner(); return; }
         if (e.key === '1') { e.preventDefault(); $wire.definirStatus('ok'); }
         else if (e.key === '2') { e.preventDefault(); $wire.definirStatus('parcial'); }
         else if (e.key === '3') { e.preventDefault(); $wire.definirStatus('faltou'); }
         else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.confirmar(); }
         else if (e.key.toLowerCase() === 'p') { e.preventDefault(); $wire.pularItem(); }
+    },
+    openScanner() {
+        this.showScanner = true; this.scanError = null;
+        this.$nextTick(() => {
+            const el = document.getElementById('scanner-elem');
+            if (!el || typeof Html5Qrcode === 'undefined') { this.scanError = 'Câmera não disponível'; return; }
+            if (!window.isSecureContext && location.protocol !== 'https:') { this.scanError = 'Scanner exige HTTPS'; return; }
+            this.qr = new Html5Qrcode('scanner-elem');
+            this.qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 250, height: 150 } },
+                (texto) => {
+                    $wire.buscarPorCodigoBarras(texto);
+                    this.closeScanner();
+                }
+            ).catch(e => { this.scanError = e.message; });
+        });
+    },
+    closeScanner() {
+        if (this.qr) { this.qr.stop().catch(() => {}); this.qr = null; }
+        this.showScanner = false;
     },
     confirmar() {
         this.confirmando = true;
@@ -213,9 +237,6 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                         @if ($prog['cancelados'] > 0)
                             <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6b7280;vertical-align:middle;margin-right:2px;"></span> {{ $prog['cancelados'] }} Cancel.</span>
                         @endif
-                        @if ($prog['altQtd'] > 0)
-                            <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6;vertical-align:middle;margin-right:2px;"></span> {{ $prog['altQtd'] }} Qtd Alt.</span>
-                        @endif
                     </div>
                 </div>
 
@@ -235,30 +256,39 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                      style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.04);transition:box-shadow 0.2s, border-color 0.2s;flex-shrink:0;">
 
                     {{-- Localização --}}
-                    <div style="display:flex;align-items:center;gap:6px;background:color-mix(in srgb,#f59e0b,8%,transparent);color:#f59e0b;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:6px;{{ !empty($item['localizacao']) ? 'background:color-mix(in srgb,#f59e0b,8%,transparent);color:#f59e0b;' : 'background:color-mix(in srgb,var(--text)4%,transparent);color:var(--muted);' }}padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:12px;">
                         <i class="fas fa-map-pin"></i>
-                        <span>Corredor —</span>
+                        <span>{{ $item['localizacao'] ?: 'Sem localização' }}</span>
                     </div>
 
-                    {{-- Nome + SKU --}}
-                    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px;">
+                    {{-- Nome + SKU + Foto --}}
+                    <div style="display:flex;gap:12px;margin-bottom:14px;">
+                        @if (!empty($item['foto']))
+                            <img src="{{ $item['foto'] }}" alt="" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;" onerror="this.style.display='none'">
+                        @endif
                         <div style="flex:1;min-width:0;">
                             <h2 style="font-size:16px;font-weight:800;color:var(--text);margin:0 0 2px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item['nome'] }}</h2>
                             <p style="font-size:11px;color:var(--muted);margin:0;">SKU: {{ $item['sku'] ?: '—' }}</p>
+                            @if (!empty($item['categoria']) && $item['categoria'] !== 'Geral')
+                                <p style="font-size:10px;color:color-mix(in srgb,var(--muted)60%,transparent);margin:2px 0 0;"><i class="fas fa-tag" style="font-size:8px;"></i> {{ $item['categoria'] }}</p>
+                            @endif
                         </div>
-                        <span style="font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;background:color-mix(in srgb,#f59e0b,12%,transparent);color:#f59e0b;white-space:nowrap;">
+                        <span style="font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;background:color-mix(in srgb,#f59e0b,12%,transparent);color:#f59e0b;white-space:nowrap;height:fit-content;">
                             {{ number_format($item['qtd_pedido'], 0, ',', '.') }} un
                         </span>
                     </div>
 
-                    {{-- QTD selector --}}
-                    <div style="display:flex;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--text)3%,transparent);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
-                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">Separando</span>
+                    {{-- QTD selector + Scanner --}}
+                    <div style="display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--text)3%,transparent);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-right:auto;">Separando</span>
                         <div style="display:flex;align-items:center;gap:4px;">
                             <button wire:click="decrementar" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" @mouseenter="$el.style.background='color-mix(in srgb,var(--text)4%,transparent)'" @mouseleave="$el.style.background='var(--surface)'">−</button>
                             <input type="number" wire:model.blur="itens.{{ $this->itemAtual }}.qtd_separada" style="width:52px;height:32px;text-align:center;border:2px solid #f59e0b;border-radius:8px;font-size:16px;font-weight:800;outline:none;background:var(--surface);">
                             <button wire:click="incrementar" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background 0.15s;" @mouseenter="$el.style.background='color-mix(in srgb,var(--text)4%,transparent)'" @mouseleave="$el.style.background='var(--surface)'">+</button>
                         </div>
+                        <button @click="openScanner()" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all 0.15s;" @mouseenter="$el.style.background='color-mix(in srgb,#3b82f6,8%,transparent)';$el.style.color='#3b82f6';$el.style.borderColor='#3b82f6'" @mouseleave="$el.style.background='var(--surface)';$el.style.color='var(--muted)';$el.style.borderColor='var(--border)'" title="Ler código de barras">
+                            <i class="fas fa-camera"></i>
+                        </button>
                     </div>
 
                     {{-- Ações rápidas --}}
@@ -320,7 +350,12 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                             <span><i class="fas fa-check" style="color:#22c55e;margin-right:4px;"></i> Processados</span>
                             <span style="background:color-mix(in srgb,var(--text)6%,transparent);padding:1px 8px;border-radius:10px;">{{ count($this->processados) }}</span>
                         </div>
+                        @php $catAtual = null; @endphp
                         @foreach ($this->processados as $pr)
+                            @if ($pr['categoria'] ?? 'Geral' !== $catAtual)
+                                @php $catAtual = $pr['categoria'] ?? 'Geral'; @endphp
+                                <div style="padding:3px 16px;font-size:9px;font-weight:700;color:color-mix(in srgb,var(--muted)50%,transparent);text-transform:uppercase;letter-spacing:1px;background:color-mix(in srgb,var(--text)2%,transparent);border-bottom:1px solid color-mix(in srgb,var(--text)4%,transparent);">{{ $catAtual }}</div>
+                            @endif
                             <div style="display:flex;justify-content:space-between;padding:5px 16px;border-bottom:1px solid color-mix(in srgb,var(--text)3%,transparent);font-size:11px;">
                                 <span style="font-weight:600;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">{{ $pr['nome'] }}</span>
                                 <span style="white-space:nowrap;{{ $pr['status'] === 'quantidade_alterada' ? 'color:#3b82f6;' : ($pr['qtd_separada'] >= $pr['qtd_pedido'] ? 'color:#22c55e;' : ($pr['qtd_separada'] > 0 ? 'color:#f59e0b;' : 'color:#ef4444;')) }};">{{ $pr['qtd_separada'] }}/{{ $pr['qtd_pedido'] }}</span>
@@ -343,5 +378,19 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                 </div>
             @endif
         @endif
+
+        {{-- SCANNER MODAL --}}
+        <div x-show="showScanner" x-cloak
+             style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+            <div style="width:100%;max-width:360px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="color:#fff;font-weight:700;font-size:14px;"><i class="fas fa-camera"></i> Escaneie o código</span>
+                    <button @click="closeScanner()" style="background:none;border:0;color:#fff;font-size:20px;cursor:pointer;">&times;</button>
+                </div>
+                <div id="scanner-elem" style="width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#000;"></div>
+                <p x-show="scanError" x-text="scanError" style="color:#ef4444;font-size:12px;margin-top:8px;text-align:center;"></p>
+                <p style="color:rgba(255,255,255,0.5);font-size:11px;text-align:center;margin-top:8px;">Aponte a câmera para o código de barras</p>
+            </div>
+        </div>
     </div>
 </div>
