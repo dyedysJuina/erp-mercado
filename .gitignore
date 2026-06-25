@@ -1,7 +1,9 @@
 /node_modules
 /vendor
 /.env
+/.env.production
 /storage/framework/cache/data/*
+/storage/framework/sessions/*
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/logs/*
