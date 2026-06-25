@@ -54,8 +54,7 @@ class PedidoOnlineManager extends Component
         if ($lojaId = auth()->user()->loja_id) {
             $q->where('loja_id', $lojaId);
         }
-        $q->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
-            ->orderByRaw("FIELD(status, 'recebido','confirmado','em_separacao','pronto_retirada','pronto_entrega')")
+        $q = $q->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
             ->orderBy('created_at', 'desc');
 
         if ($this->periodo === 'hoje') {
