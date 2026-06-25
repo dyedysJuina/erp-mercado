@@ -86,8 +86,8 @@
                         @forelse ($sugestoes as $s)
                             @php
                                 $vid = $s['variacao_id'];
-                                $qtdEdit = $this->itensPedido[$vid]['quantidade'] ?? max(1, (float)$s['sugestao']);
-                                $precoEdit = $this->itensPedido[$vid]['preco'] ?? (float)$s['custo'];
+                                $qtdEdit = (float)($this->itensPedido[$vid]['quantidade'] ?? max(1, (float)$s['sugestao']));
+                                $precoEdit = (float)($this->itensPedido[$vid]['preco'] ?? (float)$s['custo']);
                                 $totalItem = $qtdEdit * $precoEdit;
                             @endphp
                             <tr class="data-table-tr" style="{{ $s['urgencia'] === 'critica' ? 'background:color-mix(in srgb,var(--danger)4%,transparent);' : ($s['urgencia'] === 'media' ? 'background:color-mix(in srgb,var(--warning)3%,transparent);' : '') }}">
