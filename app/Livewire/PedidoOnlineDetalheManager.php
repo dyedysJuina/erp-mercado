@@ -46,6 +46,17 @@ class PedidoOnlineDetalheManager extends Component
                 'updated_at' => now(),
             ]);
 
+            // Atualiza status dos itens conforme o status do pedido
+            if ($status === 'entregue') {
+                PedidoItem::where('pedido_id', $pedido->id)
+                    ->where('status_item', '!=', 'cancelado')
+                    ->update(['status_item' => 'separado']);
+            } elseif (in_array($status, ['em_separacao', 'pronto_retirada', 'pronto_entrega'])) {
+                PedidoItem::where('pedido_id', $pedido->id)
+                    ->where('status_item', 'pendente')
+                    ->update(['status_item' => 'separado']);
+            }
+
             if ($status === 'cancelado') {
                 foreach ($pedido->itens as $item) {
                     if (in_array($item->status_item, ['pendente', 'separado', 'substituido'])) {
