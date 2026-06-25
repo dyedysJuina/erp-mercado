@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     $r('/produtos-base', \App\Livewire\ProdutoBaseManager::class, 'produtos-base');
     $r('/variacoes', \App\Livewire\VariacaoManager::class, 'variacoes');
     $r('/clientes', \App\Livewire\ClienteManager::class, 'clientes');
+    Route::get('/clientes/{id}', \App\Livewire\ClienteManager::class)->name('clientes.detalhe')->middleware('auth');
     $r('/fornecedores', \App\Livewire\FornecedorManager::class, 'fornecedores');
     $r('/precos', \App\Livewire\PrecoManager::class, 'precos');
     $r('/precos/historico', \App\Livewire\PrecoHistoricoManager::class, 'precos.historico', 'precos');

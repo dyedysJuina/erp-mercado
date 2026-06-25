@@ -35,6 +35,13 @@ class ClienteManager extends Component
     public array $enderecos = [];
     public array $gruposSelecionados = [];
 
+    public function mount(?int $id = null): void
+    {
+        if ($id) {
+            $this->selecionar($id);
+        }
+    }
+
     public function resetForm(): void
     {
         $this->editandoId = null;

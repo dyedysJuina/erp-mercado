@@ -52,7 +52,7 @@
                 </div>
                 <div style="flex:1;"></div>
                 @if ($p->cliente)
-                    <a href="/clientes?busca={{ $p->cliente->id }}" wire:navigate style="font-size:11px;color:var(--primary-600);text-decoration:none;"><i class="fas fa-user"></i> {{ $p->cliente->nome }}</a>
+                    <a href="/clientes/{{ $p->cliente->id }}" wire:navigate style="font-size:11px;color:var(--primary-600);text-decoration:none;"><i class="fas fa-user"></i> {{ $p->cliente->nome }}</a>
                 @endif
             </div>
 
