@@ -290,7 +290,11 @@ class ClienteManager extends Component
             $cliente = Cliente::findOrFail($this->editandoId);
             $cliente->update($data);
             $this->toast('Cliente atualizado com sucesso!');
-            ClientesEndereco::where('cliente_id', $cliente->id)->delete();
+            // Remove endereços que foram removidos pelo usuário
+            $novosIds = collect($this->enderecos)->pluck('id')->filter()->toArray();
+            ClientesEndereco::where('cliente_id', $cliente->id)
+                ->whereNotIn('id', $novosIds)
+                ->delete();
         }
 
         $cliente->grupos()->sync(
@@ -299,18 +303,23 @@ class ClienteManager extends Component
 
         foreach ($this->enderecos as $end) {
             if (trim($end['logradouro'] ?? '') && trim($end['cidade_id'] ?? '')) {
-                ClientesEndereco::create([
+                $endData = [
                     'cliente_id' => $cliente->id, 'titulo' => $end['titulo'] ?: 'Principal',
                     'cidade_id' => (int)$end['cidade_id'], 'cep' => $end['cep'] ?: null,
                     'bairro' => $end['bairro'] ?? '', 'logradouro' => $end['logradouro'],
                     'numero' => $end['numero'] ?: null, 'complemento' => $end['complemento'] ?: null,
                     'principal' => $end['principal'] ?? false,
-                ]);
+                ];
+                if (!empty($end['id'])) {
+                    ClientesEndereco::where('id', (int)$end['id'])->update($endData);
+                } else {
+                    ClientesEndereco::create($endData);
+                }
             }
         }
 
-        $this->resetForm();
-        $this->viewState = 'list';
+        $this->editandoId = $cliente->id;
+        $this->viewState = 'detail';
     }
 
     public function excluir(int $id): void

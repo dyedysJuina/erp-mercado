@@ -385,6 +385,39 @@
             {{-- RIGHT: SIDEBAR (só no detail) --}}
             @if ($viewState === 'detail')
             <div style="display:flex;flex-direction:column;gap:16px;">
+                @php $resumo = $this->resumoCliente; @endphp
+                @if ($resumo)
+                <div class="sidebar-card">
+                    <div class="sidebar-card-header"><i class="fas fa-chart-bar"></i> Métricas</div>
+                    <div class="sidebar-card-body">
+                        <div class="resumo-list">
+                            <div class="resumo-row">
+                                <span class="resumo-label">Classificação</span>
+                                <span class="resumo-badge" style="text-transform:uppercase;font-weight:700;{{ $resumo['classificacao'] === 'top' ? 'background:#fef3c7;color:#d97706;' : ($resumo['classificacao'] === 'medio' ? 'background:#dbeafe;color:#2563eb;' : ($resumo['classificacao'] === 'ocasional' ? 'background:#f1f5f9;color:#64748b;' : 'background:#e0f2fe;color:#0284c7;')) }}">{{ $resumo['classificacao'] }}</span>
+                            </div>
+                            <div class="resumo-row"><span class="resumo-label">Total Gasto</span><span class="resumo-value" style="font-weight:800;">R$ {{ number_format($resumo['total_gasto'], 2, ',', '.') }}</span></div>
+                            <div class="resumo-row"><span class="resumo-label">Ticket Médio</span><span class="resumo-value">R$ {{ number_format($resumo['ticket_medio'], 2, ',', '.') }}</span></div>
+                            <div class="resumo-row"><span class="resumo-label">Gasto Mensal</span><span class="resumo-value">R$ {{ number_format($resumo['gasto_mensal'], 2, ',', '.') }}</span></div>
+                            <div class="resumo-row"><span class="resumo-label">Frequência</span><span class="resumo-value">{{ number_format($resumo['frequencia'], 1, ',', '.') }} /mês</span></div>
+                            <div class="resumo-row"><span class="resumo-label">Total Compras</span><span class="resumo-value">{{ $resumo['total_compras'] }}</span></div>
+                            @if ($resumo['dias_ultima_compra'] !== null)
+                            <div class="resumo-row"><span class="resumo-label">Última Compra</span><span class="resumo-value" style="{{ $resumo['dias_ultima_compra'] > 30 ? 'color:var(--danger);' : '' }}">{{ $resumo['dias_ultima_compra'] }} dias</span></div>
+                            @endif
+                        </div>
+                        @if (!empty($resumo['favoritos']))
+                            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+                                <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">Produtos favoritos</span>
+                                @foreach ($resumo['favoritos'] as $f)
+                                    <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;">
+                                        <span style="color:var(--text);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">{{ $f['nome'] }}</span>
+                                        <span style="color:var(--muted);font-weight:600;">{{ number_format($f['qtd'], 0, ',', '.') }}x</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
                 <div class="sidebar-card">
                     <div class="sidebar-card-header"><i class="fas fa-receipt"></i> Resumo</div>
                     <div class="sidebar-card-body">
