@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Pedido;
 use App\Models\User;
 use App\Models\ProdutoVariacao;
+use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
