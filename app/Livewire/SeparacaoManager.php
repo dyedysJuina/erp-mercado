@@ -27,7 +27,7 @@ class SeparacaoManager extends Component
     public string $buscaSubstituto = '';
     public array $resultadosSubstituto = [];
     public bool $showSubstituto = false;
-    public int $volumes = 1;
+    public $volumes = 1;
     public bool $conferenciaAprovada = false;
 
     public function mount(int $id): void
@@ -379,6 +379,7 @@ class SeparacaoManager extends Component
 
     public function finalizarSeparacao()
     {
+        $this->volumes = max(1, (int) $this->volumes);
         if (!$this->conferenciaAprovada) return;
 
         DB::transaction(function () {
