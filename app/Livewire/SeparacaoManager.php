@@ -8,6 +8,7 @@ use App\Models\PedidoSeparacao;
 use App\Models\PedidoSeparacaoItem;
 use App\Models\PedidoStatusHistorico;
 use App\Models\EstoqueSaldo;
+use App\Models\ProdutoVariacao;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,9 @@ class SeparacaoManager extends Component
     public ?int $separacaoId = null;
     public string $bloqueioErro = '';
     public string $scanFeedback = '';
+    public string $buscaSubstituto = '';
+    public array $resultadosSubstituto = [];
+    public bool $showSubstituto = false;
 
     public function mount(int $id): void
     {
@@ -118,6 +122,8 @@ class SeparacaoManager extends Component
             'foto' => $i->variacao?->foto_capa_url ?? '',
             'localizacao' => $local ? trim(implode(' > ', array_filter([$local->corredor, $local->prateleira]))) : null,
             'categoria' => $cat?->caminho ?? ($cat?->nome ?? 'Geral'),
+            'substituto_id' => (int)($i->substituto_produto_variacao_id ?: 0),
+            'substituto_nome' => $i->substituto?->nome_completo ?? '',
         ];
     }
 
@@ -232,6 +238,73 @@ class SeparacaoManager extends Component
         $this->toast('Item não encontrado neste pedido.');
     }
 
+    public function abrirSubstituto(): void
+    {
+        $this->buscaSubstituto = '';
+        $this->resultadosSubstituto = [];
+        $this->showSubstituto = true;
+    }
+
+    public function fecharSubstituto(): void
+    {
+        $this->showSubstituto = false;
+        $this->resultadosSubstituto = [];
+    }
+
+    public function buscarSubstituto(): void
+    {
+        $q = trim($this->buscaSubstituto);
+        if (strlen($q) < 2) { $this->resultadosSubstituto = []; return; }
+
+        $this->resultadosSubstituto = ProdutoVariacao::with('produtoBase')
+            ->where('ativo', true)
+            ->where('nome_completo', 'like', "%{$q}%")
+            ->limit(10)
+            ->get()
+            ->map(fn($v) => [
+                'id' => $v->id,
+                'nome' => $v->nome_completo,
+                'sku' => $v->sku,
+                'preco' => $v->precosTabela->first()?->preco_venda ?? 0,
+            ])
+            ->toArray();
+    }
+
+    public function selecionarSubstituto(int $variacaoId): void
+    {
+        if (!isset($this->itens[$this->itemAtual])) return;
+        $item = &$this->itens[$this->itemAtual];
+
+        // Find the substitute name
+        $sub = collect($this->resultadosSubstituto)->firstWhere('id', $variacaoId);
+        $nomeSub = $sub['nome'] ?? "#{$variacaoId}";
+
+        $item['substituto_id'] = $variacaoId;
+        $item['substituto_nome'] = $nomeSub;
+        $item['status'] = 'substituido';
+        $item['observacao'] = "Substituído por: {$nomeSub}";
+        $this->showSubstituto = false;
+        $this->toast("Substituto selecionado: {$nomeSub}");
+    }
+
+    public function msgWhatsApp(string $tipo): string
+    {
+        $pedido = $this->pedido();
+        $cliente = $pedido?->cliente;
+        if (!$cliente || !$cliente->whatsapp) return '';
+
+        $numero = preg_replace('/\D/', '', $cliente->whatsapp);
+        $mensagens = [
+            'iniciando' => "Olá {$cliente->nome}! Seu pedido #{$pedido->id} está sendo separado. Em breve avisamos quando estiver pronto. 🛒",
+            'faltou' => "Oi {$cliente->nome}! Infelizmente alguns itens do seu pedido #{$pedido->id} estão em falta. Vamos te atualizar em breve.",
+            'pronto' => "{$cliente->nome}, seu pedido #{$pedido->id} já está separado e pronto para retirada/entrega! ✅",
+            'substituicao' => "{$cliente->nome}, precisamos autorizar uma substituição no pedido #{$pedido->id}. Entraremos em contato.",
+        ];
+
+        $texto = $mensagens[$tipo] ?? $mensagens['pronto'];
+        return "https://wa.me/55{$numero}?text=" . urlencode($texto);
+    }
+
     public function confirmarProximo(): void
     {
         $item = $this->itens[$this->itemAtual] ?? null;
@@ -252,12 +325,16 @@ class SeparacaoManager extends Component
         }
 
         DB::transaction(function () use ($item, $statusFinal) {
-            PedidoItem::where('id', $item['id'])->update([
+            $data = [
                 'status_item' => $statusFinal,
                 'quantidade_separada' => $item['qtd_separada'],
                 'observacao_separacao' => $item['observacao'] ?: null,
                 'separado_por' => auth()->id(),
-            ]);
+            ];
+            if (!empty($item['substituto_id'])) {
+                $data['substituto_produto_variacao_id'] = $item['substituto_id'];
+            }
+            PedidoItem::where('id', $item['id'])->update($data);
 
             if ($this->separacaoId) {
                 PedidoSeparacaoItem::updateOrCreate(

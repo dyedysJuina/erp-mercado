@@ -91,9 +91,20 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
             </a>
             <span style="font-weight:800;font-size:14px;letter-spacing:0.5px;text-shadow:0 1px 4px rgba(0,0,0,0.2);">Pedido #{{ $this->pedidoId }}</span>
             @if ($p && $p->cliente && $p->cliente->whatsapp)
-                <a href="https://wa.me/55{{ preg_replace('/\D/', '', $p->cliente->whatsapp) }}" target="_blank" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px);">
-                    <i class="fab fa-whatsapp"></i> Cliente
-                </a>
+                <div style="display:flex;gap:4px;">
+                    <a href="https://wa.me/55{{ preg_replace('/\D/', '', $p->cliente->whatsapp) }}" target="_blank" style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;text-decoration:none;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px);">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                    <div style="position:relative;" x-data="{ open: false }">
+                        <button @click="open = !open" style="background:rgba(255,255,255,0.2);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border:0;border-radius:20px;cursor:pointer;backdrop-filter:blur(4px);">&#9660;</button>
+                        <div x-show="open" @click.away="open = false" x-cloak style="position:absolute;top:100%;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.1);z-index:30;min-width:200px;overflow:hidden;">
+                            <a href="{{ $this->msgWhatsApp('iniciando') }}" target="_blank" style="display:block;padding:8px 12px;font-size:11px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);">Iniciando separação</a>
+                            <a href="{{ $this->msgWhatsApp('faltou') }}" target="_blank" style="display:block;padding:8px 12px;font-size:11px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);">Item em falta</a>
+                            <a href="{{ $this->msgWhatsApp('substituicao') }}" target="_blank" style="display:block;padding:8px 12px;font-size:11px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border);">Precisa substituir</a>
+                            <a href="{{ $this->msgWhatsApp('pronto') }}" target="_blank" style="display:block;padding:8px 12px;font-size:11px;color:var(--text);text-decoration:none;">Pedido pronto</a>
+                        </div>
+                    </div>
+                </div>
             @else
                 <span style="width:72px;"></span>
             @endif
@@ -291,25 +302,31 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                         </button>
                     </div>
 
-                    {{-- Ações rápidas --}}
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">
+                    {{-- Ações rápidas + Substituir --}}
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-bottom:12px;">
                         <button wire:click="definirStatus('ok')"
-                                style="padding:10px 6px;border:2px solid #22c55e;border-radius:10px;background:color-mix(in srgb,#22c55e,6%,transparent);color:#22c55e;font-weight:700;font-size:11px;cursor:pointer;text-align:center;transition:all 0.15s;"
+                                style="padding:8px 4px;border:2px solid #22c55e;border-radius:10px;background:color-mix(in srgb,#22c55e,6%,transparent);color:#22c55e;font-weight:700;font-size:10px;cursor:pointer;text-align:center;transition:all 0.15s;"
                                 @mouseenter="$el.style.background='color-mix(in srgb,#22c55e,14%,transparent)';$el.style.transform='scale(1.02)'"
                                 @mouseleave="$el.style.background='color-mix(in srgb,#22c55e,6%,transparent)';$el.style.transform='scale(1)'">
-                            <i class="fas fa-check-circle" style="display:block;font-size:18px;margin-bottom:2px;"></i> OK <span style="font-size:9px;opacity:0.6;">[1]</span>
+                            <i class="fas fa-check-circle" style="display:block;font-size:16px;margin-bottom:2px;"></i> OK <span style="font-size:8px;opacity:0.6;">[1]</span>
                         </button>
                         <button wire:click="definirStatus('parcial')"
-                                style="padding:10px 6px;border:2px solid #f59e0b;border-radius:10px;background:color-mix(in srgb,#f59e0b,6%,transparent);color:#f59e0b;font-weight:700;font-size:11px;cursor:pointer;text-align:center;transition:all 0.15s;"
+                                style="padding:8px 4px;border:2px solid #f59e0b;border-radius:10px;background:color-mix(in srgb,#f59e0b,6%,transparent);color:#f59e0b;font-weight:700;font-size:10px;cursor:pointer;text-align:center;transition:all 0.15s;"
                                 @mouseenter="$el.style.background='color-mix(in srgb,#f59e0b,14%,transparent)';$el.style.transform='scale(1.02)'"
                                 @mouseleave="$el.style.background='color-mix(in srgb,#f59e0b,6%,transparent)';$el.style.transform='scale(1)'">
-                            <i class="fas fa-exclamation-triangle" style="display:block;font-size:18px;margin-bottom:2px;"></i> Parcial <span style="font-size:9px;opacity:0.6;">[2]</span>
+                            <i class="fas fa-exclamation-triangle" style="display:block;font-size:16px;margin-bottom:2px;"></i> Parcial <span style="font-size:8px;opacity:0.6;">[2]</span>
                         </button>
                         <button wire:click="definirStatus('faltou')"
-                                style="padding:10px 6px;border:2px solid #ef4444;border-radius:10px;background:color-mix(in srgb,#ef4444,6%,transparent);color:#ef4444;font-weight:700;font-size:11px;cursor:pointer;text-align:center;transition:all 0.15s;"
+                                style="padding:8px 4px;border:2px solid #ef4444;border-radius:10px;background:color-mix(in srgb,#ef4444,6%,transparent);color:#ef4444;font-weight:700;font-size:10px;cursor:pointer;text-align:center;transition:all 0.15s;"
                                 @mouseenter="$el.style.background='color-mix(in srgb,#ef4444,14%,transparent)';$el.style.transform='scale(1.02)'"
                                 @mouseleave="$el.style.background='color-mix(in srgb,#ef4444,6%,transparent)';$el.style.transform='scale(1)'">
-                            <i class="fas fa-times-circle" style="display:block;font-size:18px;margin-bottom:2px;"></i> Faltou <span style="font-size:9px;opacity:0.6;">[3]</span>
+                            <i class="fas fa-times-circle" style="display:block;font-size:16px;margin-bottom:2px;"></i> Faltou <span style="font-size:8px;opacity:0.6;">[3]</span>
+                        </button>
+                        <button wire:click="abrirSubstituto"
+                                style="padding:8px 4px;border:2px solid #3b82f6;border-radius:10px;background:color-mix(in srgb,#3b82f6,6%,transparent);color:#3b82f6;font-weight:700;font-size:10px;cursor:pointer;text-align:center;transition:all 0.15s;"
+                                @mouseenter="$el.style.background='color-mix(in srgb,#3b82f6,14%,transparent)';$el.style.transform='scale(1.02)'"
+                                @mouseleave="$el.style.background='color-mix(in srgb,#3b82f6,6%,transparent)';$el.style.transform='scale(1)'">
+                            <i class="fas fa-exchange-alt" style="display:block;font-size:16px;margin-bottom:2px;"></i> Subst. <span style="font-size:8px;opacity:0.6;">[4]</span>
                         </button>
                     </div>
 
@@ -323,7 +340,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                 {{-- Atalhos hint --}}
                 <div style="text-align:center;margin-top:8px;font-size:10px;color:color-mix(in srgb,var(--muted)50%,transparent);">
                     <i class="fas fa-keyboard" style="margin-right:4px;"></i>
-                    1=OK 2=Parcial 3=Faltou Espaço=Confirmar P=Pular
+                    1=OK 2=Parcial 3=Faltou 4=Subst. Espaço=Confirmar P=Pular
                 </div>
             </div>
 
@@ -378,6 +395,35 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                 </div>
             @endif
         @endif
+
+        {{-- SUBSTITUTO MODAL --}}
+        <div x-show="$wire.showSubstituto" x-cloak
+             style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:998;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;">
+            <div style="width:100%;max-width:400px;background:var(--surface);border-radius:16px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,0.15);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="font-weight:800;font-size:14px;color:var(--text);"><i class="fas fa-exchange-alt" style="color:#3b82f6;"></i> Substituir produto</span>
+                    <button wire:click="fecharSubstituto" style="background:none;border:0;font-size:18px;color:var(--muted);cursor:pointer;">&times;</button>
+                </div>
+                <input wire:model.live="buscaSubstituto" wire:input="buscarSubstituto" placeholder="Buscar produto..." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;outline:none;margin-bottom:12px;">
+                @if (count($this->resultadosSubstituto) > 0)
+                    <div style="max-height:300px;overflow-y:auto;">
+                        @foreach ($this->resultadosSubstituto as $r)
+                            <button wire:click="selecionarSubstituto({{ $r['id'] }})" style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;margin-bottom:4px;text-align:left;font-size:12px;">
+                                <div style="flex:1;min-width:0;">
+                                    <span style="font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $r['nome'] }}</span>
+                                    <span style="font-size:10px;color:var(--muted);">SKU: {{ $r['sku'] ?: '—' }}</span>
+                                </div>
+                                @if (!empty($r['preco']))
+                                    <span style="font-weight:700;color:var(--text);white-space:nowrap;margin-left:8px;">R$ {{ number_format($r['preco'], 2, ',', '.') }}</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+                @elseif (strlen(trim($this->buscaSubstituto)) >= 2)
+                    <p style="text-align:center;font-size:12px;color:var(--muted);padding:20px 0;">Nenhum produto encontrado.</p>
+                @endif
+            </div>
+        </div>
 
         {{-- SCANNER MODAL --}}
         <div x-show="showScanner" x-cloak
