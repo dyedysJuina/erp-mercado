@@ -15,6 +15,7 @@ class FiscalDocumento extends Model
         'valor_total',
         'emitida_at',
         'motivo_cancelamento',
+        'pdv_venda_id',
     ];
 
     protected function casts(): array
