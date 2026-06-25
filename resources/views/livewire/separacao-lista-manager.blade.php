@@ -1,6 +1,5 @@
-@push('head')
-<meta name="theme-color" content="#f59e0b">
-<script src="/js/html5-qrcode.min.js"></script>
+<div>
+<script src="/js/html5-qrcode.min.js" defer></script>
 <style>
 /* ======================================
    VARIABLES - TEMA PROPRIO SEPARACAO
@@ -71,7 +70,6 @@
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border);border-radius:999px; }
 </style>
-@endpush
 
 <div x-data="{
     show: @entangle('toastShow'),
@@ -199,11 +197,11 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
                     @endif
                 </div>
             @endif
-        </div>
     </div>
 
     {{-- MODAL SYSTEM --}}
     <div x-show="showModal" x-cloak class="modal-overlay" @click.self="closeModal()">
         <div class="modal-sheet" x-html="modalHtml"></div>
     </div>
+</div>
 </div>
