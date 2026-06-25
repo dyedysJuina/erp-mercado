@@ -10,6 +10,7 @@ $overridesCss = app(\App\Services\ThemeService::class)->getAllOverridesCss();
     <title>{{ $title ?? config('app.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style id="database-theme-tokens">{!! $overridesCss !!}</style>
+    @stack('head')
 </head>
 <body>
 

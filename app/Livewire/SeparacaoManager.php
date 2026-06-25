@@ -14,9 +14,9 @@ class SeparacaoManager extends Component
     public int $itemAtual = 0;
     public array $itens = [];
     public array $processados = [];
+    public array $cancelados = [];
     public string $toastMsg = '';
     public bool $toastShow = false;
-    public bool $showResumo = false;
 
     public function mount(int $id): void
     {
@@ -28,9 +28,14 @@ class SeparacaoManager extends Component
     {
         $pedido = Pedido::with('itens.variacao')->findOrFail($this->pedidoId);
 
-        $todos = $pedido->itens->filter(fn($i) => $i->status_item !== 'cancelado')->values();
-        $jaProcessados = $todos->filter(fn($i) => in_array($i->status_item, ['separado', 'faltou', 'substituido']));
-        $pendentes = $todos->filter(fn($i) => $i->status_item === 'pendente');
+        $todos = $pedido->itens->values();
+
+        $this->cancelados = $todos->filter(fn($i) => $i->status_item === 'cancelado')
+            ->map(fn($i) => $this->mapearItem($i))->toArray();
+
+        $restantes = $todos->filter(fn($i) => $i->status_item !== 'cancelado');
+        $jaProcessados = $restantes->filter(fn($i) => in_array($i->status_item, ['separado', 'faltou', 'substituido']));
+        $pendentes = $restantes->filter(fn($i) => $i->status_item === 'pendente');
 
         $this->processados = $jaProcessados->map(fn($i) => $this->mapearItem($i))->toArray();
         $this->itens = $pendentes->map(fn($i) => $this->mapearItem($i))->toArray();
@@ -83,6 +88,7 @@ class SeparacaoManager extends Component
             'total' => $total, 'feitos' => $feitos, 'pct' => $pctTotal,
             'separados' => $separados, 'faltou' => $faltou, 'substituidos' => $substituidos,
             'pctOk' => $pctOk, 'pctFaltou' => $pctFaltou, 'pctSubst' => $pctSubst,
+            'cancelados' => count($this->cancelados),
         ];
     }
 
