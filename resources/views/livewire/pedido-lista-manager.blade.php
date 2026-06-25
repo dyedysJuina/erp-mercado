@@ -62,12 +62,8 @@
                                 <td class="data-table-td text-right font-bold">R$ {{ number_format($p['total_pedido'], 2, ',', '.') }}</td>
                                 <td class="data-table-td text-center">
                                     @php
-                                        $pedidoId = $p['id'];
-                                        $resumo = \App\Models\CompraPedidoItem::where('compra_pedido_id', $pedidoId)
-                                            ->selectRaw('COALESCE(SUM(quantidade_pedida),0) as total_pedido, COALESCE(SUM(quantidade_recebida),0) as total_recebido')
-                                            ->first();
-                                        $totalPedido = (float)($resumo->total_pedido ?? 0);
-                                        $totalRecebido = (float)($resumo->total_recebido ?? 0);
+                                        $totalPedido = (float)($p['total_pedido_qtd'] ?? 0);
+                                        $totalRecebido = (float)($p['total_recebido_qtd'] ?? 0);
                                         $pct = $totalPedido > 0 ? round(($totalRecebido / $totalPedido) * 100) : 0;
                                     @endphp
                                     <div style="display:flex;align-items:center;gap:6px;">
@@ -85,49 +81,11 @@
                                     <span class="badge-sm {{ $sc }}">{{ $label }}</span>
                                 </td>
                                 <td class="data-table-td text-center" style="white-space:nowrap;">
-                                    @if ($p['status'] === 'rascunho')
-                                        <button wire:click="enviar({{ $p['id'] }})" class="btn-sm btn-primary" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();"><i class="fas fa-paper-plane"></i></button>
-                                        <button wire:click="$set('detalhePedidoId', {{ $p['id'] }})" class="btn-sm btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();"><i class="fas fa-eye"></i></button>
-                                    @elseif ($p['status'] === 'enviado' || $p['status'] === 'parcialmente_recebido')
-                                        <button wire:click="abrirReceber({{ $p['id'] }})" class="btn-sm btn-success" style="padding:4px 10px;font-size:10px;" onclick="event.stopPropagation();"><i class="fas fa-check"></i> Receber</button>
-                                    @elseif ($p['status'] === 'recebido')
-                                        <span style="font-size:10px;color:var(--success);">✅</span>
-                                    @endif
+                                    <a href="/pedidos/{{ $p['id'] }}" wire:navigate class="btn-sm btn-secondary" style="padding:4px 10px;font-size:10px;text-decoration:none;">
+                                        <i class="fas fa-eye"></i> Detalhe
+                                    </a>
                                 </td>
                             </tr>
-                            @if ($this->detalhePedidoId === $p['id'])
-                                <tr>
-                                    <td colspan="7" style="padding:0;border-bottom:2px solid var(--border);">
-                                        @php $itens = \App\Models\CompraPedidoItem::with('variacao')->where('compra_pedido_id', $p['id'])->get(); @endphp
-                                        <div style="padding:12px 16px;background:color-mix(in srgb,var(--text)2%,var(--surface));">
-                                            <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">Itens do Pedido #{{ $p['id'] }}</div>
-                                            <table style="width:100%;border-collapse:collapse;font-size:11px;">
-                                                <thead>
-                                                    <tr style="border-bottom:1px solid var(--border);">
-                                                        <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;">Produto</th>
-                                                        <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:600;">Pedido</th>
-                                                        <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:600;">Recebido</th>
-                                                        <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:600;">Falta</th>
-                                                        <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:600;">Custo</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($itens as $i)
-                                                        @php $pendente = max(0, (float)$i->quantidade_pedida - (float)$i->quantidade_recebida); @endphp
-                                                        <tr style="border-bottom:1px solid color-mix(in srgb,var(--text)6%,transparent);">
-                                                            <td style="padding:6px 8px;font-weight:600;">{{ $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id }}</td>
-                                                            <td style="padding:6px 8px;text-align:right;">{{ number_format((float)$i->quantidade_pedida, 3, ',', '.') }}</td>
-                                                            <td style="padding:6px 8px;text-align:right;color:var(--success);">{{ number_format((float)$i->quantidade_recebida, 3, ',', '.') }}</td>
-                                                            <td style="padding:6px 8px;text-align:right;color:{{ $pendente > 0 ? 'var(--danger)' : 'var(--success)' }};font-weight:700;">{{ number_format($pendente, 3, ',', '.') }}</td>
-                                                            <td style="padding:6px 8px;text-align:right;">R$ {{ number_format((float)$i->custo_unitario, 2, ',', '.') }}</td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endif
                         @empty
                             <tr><td colspan="7" class="data-table-empty">Nenhum pedido encontrado.</td></tr>
                         @endforelse
