@@ -100,45 +100,5 @@
         </div>
     </div>
 
-    {{-- RECEBER MODAL --}}
-    <div x-data="{ open: $wire.entangle('receberModalOpen') }" x-show="open" x-cloak style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;">
-        <div style="background:var(--surface);border-radius:16px;border:1px solid var(--border);width:100%;max-width:700px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
-                <h3 style="margin:0;font-size:15px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:8px;"><i class="fas fa-check-circle" style="color:var(--success);"></i> Receber Pedido #{{ $this->receberPedidoId }}</h3>
-                <button type="button" wire:click="$set('receberModalOpen', false)" style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:24px;">&times;</button>
-            </div>
-            <div style="padding:16px 20px;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-                    <div class="field"><label>Nº Nota Fiscal</label><input wire:model="receberNota" placeholder="Opcional"></div>
-                    <div class="field"><label>Chave NF-e</label><input wire:model="receberChave" placeholder="Opcional"></div>
-                </div>
-                <table style="width:100%;border-collapse:collapse;font-size:12px;">
-                    <thead>
-                        <tr style="border-bottom:2px solid var(--border);">
-                            <th style="text-align:left;padding:6px 4px;color:var(--muted);font-weight:600;">Produto</th>
-                            <th style="text-align:right;padding:6px 4px;color:var(--muted);font-weight:600;">Pedido</th>
-                            <th style="text-align:right;padding:6px 4px;color:var(--muted);font-weight:600;">Receber</th>
-                            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600;">Lote</th>
-                            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600;">Validade</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($this->receberItens as $idx => $r)
-                            <tr style="border-bottom:1px solid color-mix(in srgb,var(--text)6%,transparent);">
-                                <td style="padding:6px 4px;font-weight:600;">{{ $r['nome'] }}</td>
-                                <td style="padding:6px 4px;text-align:right;">{{ number_format($r['pedido'], 3, ',', '.') }}</td>
-                                <td style="padding:6px 4px;text-align:right;"><input type="text" inputmode="decimal" wire:model="receberItens.{{ $idx }}.receber" style="width:70px;text-align:right;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;"></td>
-                                <td style="padding:6px 4px;text-align:center;"><input type="text" wire:model="receberItens.{{ $idx }}.lote" placeholder="—" style="width:90px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;"></td>
-                                <td style="padding:6px 4px;text-align:center;"><input type="date" wire:model="receberItens.{{ $idx }}.validade" style="width:120px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;"></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-                    <button type="button" wire:click="$set('receberModalOpen', false)" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);cursor:pointer;font-weight:700;color:var(--text);font-size:13px;">Cancelar</button>
-                    <button type="button" wire:click="confirmarRecebimento" style="flex:1;padding:10px;border:0;border-radius:8px;background:var(--success);color:#fff;cursor:pointer;font-weight:800;font-size:13px;">Confirmar Recebimento</button>
-                </div>
-            </div>
-        </div>
     </div>
 </div>

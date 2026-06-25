@@ -174,6 +174,15 @@ class PedidoDetalheManager extends Component
         $this->toast('Recebimento confirmado com sucesso!');
     }
 
+    public function enviar(): void
+    {
+        $p = $this->pedido;
+        if ($p && $p->status === 'rascunho') {
+            $p->update(['status' => 'enviado']);
+            $this->toast('Pedido marcado como enviado!');
+        }
+    }
+
     public function toast(string $msg): void
     {
         $this->toastMsg = $msg;
