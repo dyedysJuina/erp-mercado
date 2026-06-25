@@ -71,25 +71,32 @@ class StorefrontManager extends Component
     public function clientePadrao(): int
     {
         $nome = trim($this->clienteNome);
-        if (!$nome) return 1;
+        if (strlen($nome) < 2) return 0;
 
-        $cliente = DB::table('clientes')->where('nome', $nome)->first();
-        if ($cliente) return (int)$cliente->id;
+        $cliente = \App\Models\Cliente::firstOrCreate(
+            ['nome' => $nome],
+            [
+                'whatsapp' => trim($this->clienteWhatsApp) ?: null,
+                'ativo' => true,
+            ]
+        );
 
-        return DB::table('clientes')->insertGetId([
-            'nome' => $nome,
-            'whatsapp' => trim($this->clienteWhatsApp) ?: null,
-            'ativo' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+        session([
+            'cliente_id' => $cliente->id,
+            'cliente_nome' => $cliente->nome,
         ]);
+
+        return $cliente->id;
     }
 
     public function finalizar(array $carrinho): ?int
     {
         if (empty($carrinho)) return null;
         $clienteId = (int)(session('cliente_id'));
-        if (!$clienteId) return null;
+        if (!$clienteId) {
+            $clienteId = $this->clientePadrao();
+            if (!$clienteId) return null;
+        }
         if (strlen(trim($this->clienteNome)) < 2) return null;
 
         $total = 0;
