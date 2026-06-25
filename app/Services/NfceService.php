@@ -106,17 +106,19 @@ class NfceService
 
     private function gerarChave(Loja $loja, string $serie, string $numero, string $tpAmb = '2'): string
     {
-        $cnpj = preg_replace('/\D/', '', $loja->cnpj ?? '00000000000000');
-        $ufCodigo = $loja->cidade?->estado?->codigo_ibge ?? $loja->cidade?->estado?->uf;
-        $ufCodigo = $this->ufParaCodigo($ufCodigo ?: $loja->uf ?? 'MT');
+        $cnpj = preg_replace('/\D/', '', $loja->cnpj ?? '');
+        if (strlen($cnpj) !== 14) $cnpj = '00000000000000';
+
+        $uf = $loja->cidade?->estado?->uf ?? $loja->uf ?? 'MT';
+        $ufCodigo = $this->ufParaCodigo($uf);
+
         $ano = now()->format('y');
         $mes = now()->format('m');
         $tpEmis = '1';
-        $cnpjPadded = str_pad(substr($cnpj, 0, 14), 14, '0');
         $mod = '65';
         $seriePadded = str_pad($serie, 3, '0', STR_PAD_LEFT);
         $numPadded = str_pad($numero, 9, '0', STR_PAD_LEFT);
-        $base = "{$ufCodigo}{$ano}{$mes}{$cnpjPadded}{$mod}{$seriePadded}{$numPadded}{$tpEmis}{$tpAmb}";
+        $base = "{$ufCodigo}{$ano}{$mes}{$cnpj}{$mod}{$seriePadded}{$numPadded}{$tpEmis}{$tpAmb}";
         $dv = $this->calcularDvChave($base);
         return $base . $dv;
     }
@@ -252,7 +254,8 @@ class NfceService
             $prod->addChild('indTot', '1');
 
             $imposto = $det->addChild('imposto');
-            $imposto->addChild('vTotTrib', '0.00');
+            $vTotTrib = (float)$item->valor_icms + (float)$item->valor_pis + (float)$item->valor_cofins;
+            $imposto->addChild('vTotTrib', number_format($vTotTrib, 2, '.', ''));
 
             $csosn = $item->cst_icms_csosn ?? '102';
             $origem = '0';

@@ -217,19 +217,20 @@ class NfeEntradaManager extends Component
             if ($this->data_recebimento) {
                 $totalNota = collect($this->itens)->sum('total');
                 $empresaId = Loja::where('id', $lojaId)->value('empresa_id') ?? 1;
-                DB::table('financeiro_lancamentos')->insert([
+                $catDespesa = \App\Models\FinanceiroCategoria::where('tipo', 'despesa')
+                    ->where('ativo', true)->orderBy('id')->value('id');
+                \App\Models\FinanceiroLancamento::create([
                     'empresa_id' => $empresaId,
                     'loja_id' => $lojaId,
-                    'fornecedor_id' => $this->fornecedor_id,
-                    'compra_pedido_id' => $this->compra_pedido_id,
+                    'fornecedor_id' => (int)$this->fornecedor_id,
+                    'compra_pedido_id' => $this->compra_pedido_id ? (int)$this->compra_pedido_id : null,
+                    'categoria_id' => $catDespesa,
                     'tipo' => 'despesa',
                     'descricao' => "NF-e Entrada #{$doc->id} - {$this->fornecedor_nome}",
                     'valor' => $totalNota,
                     'data_competencia' => $this->data_emissao ?: $this->data_recebimento,
                     'data_vencimento' => $this->data_recebimento,
                     'status' => 'pendente',
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
             }
         });

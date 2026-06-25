@@ -19,9 +19,8 @@ class CalculoImpostoService
 
         return [
             'icms'   => $this->calcularIcms($csosn, $origem, $valorUnitario, $icmsAliquota),
-            'pis'    => $this->calcularPisCofins($csosn, $valorUnitario, $pisAliquota),
-            'cofins' => $this->calcularPisCofins($csosn, $valorUnitario, $cofinsAliquota),
-            'csosn_origem' => $variacao->cst_icms ? 'manual' : 'regra',
+            'pis'    => $this->calcularPisCofins($csosn, $valorUnitario, $pisAliquota, $variacao->cst_pis),
+            'cofins' => $this->calcularPisCofins($csosn, $valorUnitario, $cofinsAliquota, $variacao->cst_cofins),
         ];
     }
 
@@ -63,9 +62,9 @@ class CalculoImpostoService
         ];
     }
 
-    private function calcularPisCofins(string $csosn, float $valor, ?float $aliquota): array
+    private function calcularPisCofins(string $csosn, float $valor, ?float $aliquota, ?string $cstVariacao = null): array
     {
-        $cst = match ($csosn) {
+        $cst = $cstVariacao ?: match ($csosn) {
             '101', '102', '201', '202' => '49',
             '103', '203', '300', '400' => '04',
             '500' => '05',
