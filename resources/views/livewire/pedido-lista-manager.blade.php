@@ -55,7 +55,7 @@
                     </tr></thead>
                     <tbody>
                         @forelse ($pedidos as $p)
-                            <tr class="data-table-tr" style="cursor:pointer;" wire:click="verDetalhe({{ $p['id'] }})">
+                            <tr class="data-table-tr">
                                 <td class="data-table-td font-bold">#{{ $p['id'] }}</td>
                                 <td class="data-table-td font-semibold">{{ $p['fornecedor']['razao_social'] ?? '—' }}</td>
                                 <td class="data-table-td text-muted">{{ \Carbon\Carbon::parse($p['created_at'])->format('d/m/Y') }}</td>
@@ -98,7 +98,5 @@
                 </div>
             @endif
         </div>
-    </div>
-
     </div>
 </div>
