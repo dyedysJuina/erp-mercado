@@ -16,6 +16,7 @@ class SeparacaoManager extends Component
     public array $processados = [];
     public string $toastMsg = '';
     public bool $toastShow = false;
+    public bool $showResumo = false;
 
     public function mount(int $id): void
     {
@@ -31,29 +32,23 @@ class SeparacaoManager extends Component
         $jaProcessados = $todos->filter(fn($i) => in_array($i->status_item, ['separado', 'faltou', 'substituido']));
         $pendentes = $todos->filter(fn($i) => $i->status_item === 'pendente');
 
-        $this->processados = $jaProcessados->map(fn($i) => [
-            'id' => $i->id,
-            'variacao_id' => $i->produto_variacao_id,
-            'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
-            'qtd_pedido' => (float)$i->quantidade_solicitada,
-            'qtd_separada' => (float)($i->quantidade_separada ?: 0),
-            'status' => $i->status_item,
-            'observacao' => $i->observacao_separacao ?? '',
-            'sku' => $i->variacao?->sku ?? '',
-        ])->toArray();
-
-        $this->itens = $pendentes->map(fn($i) => [
-            'id' => $i->id,
-            'variacao_id' => $i->produto_variacao_id,
-            'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
-            'qtd_pedido' => (float)$i->quantidade_solicitada,
-            'qtd_separada' => (float)($i->quantidade_separada ?: 0),
-            'status' => $i->status_item,
-            'observacao' => $i->observacao_separacao ?? '',
-            'sku' => $i->variacao?->sku ?? '',
-        ])->toArray();
-
+        $this->processados = $jaProcessados->map(fn($i) => $this->mapearItem($i))->toArray();
+        $this->itens = $pendentes->map(fn($i) => $this->mapearItem($i))->toArray();
         $this->itemAtual = 0;
+    }
+
+    private function mapearItem($i): array
+    {
+        return [
+            'id' => $i->id,
+            'variacao_id' => $i->produto_variacao_id,
+            'nome' => $i->variacao?->nome_completo ?? '#' . $i->produto_variacao_id,
+            'qtd_pedido' => (float)$i->quantidade_solicitada,
+            'qtd_separada' => (float)($i->quantidade_separada ?: 0),
+            'status' => $i->status_item,
+            'observacao' => $i->observacao_separacao ?? '',
+            'sku' => $i->variacao?->sku ?? '',
+        ];
     }
 
     public function getItemProperty(): ?array
@@ -75,10 +70,19 @@ class SeparacaoManager extends Component
     {
         $total = count($this->itens) + count($this->processados);
         $feitos = count($this->processados);
+        $separados = count(array_filter($this->processados, fn($i) => $i['status'] === 'separado'));
+        $faltou = count(array_filter($this->processados, fn($i) => $i['status'] === 'faltou'));
+        $substituidos = count(array_filter($this->processados, fn($i) => $i['status'] === 'substituido'));
+
+        $pctTotal = $total > 0 ? round(($feitos / $total) * 100) : 0;
+        $pctOk = $total > 0 ? round(($separados / $total) * 100) : 0;
+        $pctFaltou = $total > 0 ? round(($faltou / $total) * 100) : 0;
+        $pctSubst = $total > 0 ? round(($substituidos / $total) * 100) : 0;
+
         return [
-            'total' => $total,
-            'feitos' => $feitos,
-            'pct' => $total > 0 ? round(($feitos / $total) * 100) : 0,
+            'total' => $total, 'feitos' => $feitos, 'pct' => $pctTotal,
+            'separados' => $separados, 'faltou' => $faltou, 'substituidos' => $substituidos,
+            'pctOk' => $pctOk, 'pctFaltou' => $pctFaltou, 'pctSubst' => $pctSubst,
         ];
     }
 
@@ -132,9 +136,9 @@ class SeparacaoManager extends Component
         ]);
 
         $this->processados[] = $item;
-        $this->itemAtual++;
+        array_splice($this->itens, $this->itemAtual, 1);
 
-        if ($this->itemAtual >= count($this->itens)) {
+        if (count($this->itens) === 0) {
             $pedido = Pedido::find($this->pedidoId);
             if ($pedido && $pedido->status === 'recebido') {
                 $pedido->update(['status' => 'em_separacao']);
@@ -149,7 +153,7 @@ class SeparacaoManager extends Component
 
     public function finalizarSeparacao()
     {
-        for ($i = $this->itemAtual; $i < count($this->itens); $i++) {
+        for ($i = 0; $i < count($this->itens); $i++) {
             $item = $this->itens[$i];
             PedidoItem::where('id', $item['id'])->update([
                 'status_item' => $item['status'] ?: ($item['qtd_separada'] > 0 ? 'separado' : 'faltou'),
