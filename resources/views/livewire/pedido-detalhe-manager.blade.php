@@ -106,17 +106,16 @@
                             <thead>
                                 <tr>
                                     @if (in_array($p->status, ['enviado', 'parcialmente_recebido']))
-                                        <th class="data-table-th text-center" style="width:32px;">
-                                            <input type="checkbox" checked disabled style="cursor:pointer;">
-                                        </th>
+                                        <th class="data-table-th text-center" style="width:32px;">Conf.</th>
                                     @endif
                                     <th class="data-table-th text-left">Produto</th>
                                     <th class="data-table-th text-right">Pedido</th>
                                     <th class="data-table-th text-right">Recebido</th>
                                     <th class="data-table-th text-right">Falta</th>
                                     @if (in_array($p->status, ['enviado', 'parcialmente_recebido']))
-                                        <th class="data-table-th text-right" style="width:70px;">Receber</th>
-                                        <th class="data-table-th text-right" style="width:60px;">Avaria</th>
+                                        <th class="data-table-th text-right" style="width:100px;">Receber</th>
+                                        <th class="data-table-th text-right" style="width:80px;">Avaria</th>
+                                        <th class="data-table-th text-center" style="width:70px;">Ñ Veio</th>
                                         <th class="data-table-th text-center" style="width:90px;">Lote</th>
                                         <th class="data-table-th text-center" style="width:110px;">Validade</th>
                                     @endif
@@ -126,7 +125,7 @@
                             <tbody>
                                 @forelse ($this->itens as $idx => $i)
                                     @php $pendente = max(0, $i['quantidade_pedida'] - $i['quantidade_recebida']); @endphp
-                                    <tr class="data-table-tr" style="{{ !$i['conferido'] ? 'opacity:0.5;' : ($i['avaria'] > 0 ? 'background:color-mix(in srgb,var(--danger)4%,transparent);' : '') }}">
+                                    <tr class="data-table-tr" style="{{ !$i['conferido'] ? 'opacity:0.4;' : ($i['avaria'] > 0 ? 'background:color-mix(in srgb,var(--danger)4%,transparent);' : ($i['nao_veio'] ? 'background:color-mix(in srgb,var(--warning)4%,transparent);' : '')) }}">
                                         @if (in_array($p->status, ['enviado', 'parcialmente_recebido']))
                                             <td class="data-table-td text-center">
                                                 <input type="checkbox" wire:model.live="itens.{{ $idx }}.conferido" style="cursor:pointer;">
@@ -138,12 +137,25 @@
                                         <td class="data-table-td text-right" style="color:{{ $pendente > 0 ? 'var(--danger)' : 'var(--success)' }};font-weight:700;">{{ number_format($pendente, 3, ',', '.') }}</td>
                                         @if (in_array($p->status, ['enviado', 'parcialmente_recebido']))
                                             <td class="data-table-td text-right">
-                                                <input type="text" inputmode="decimal" wire:model="itens.{{ $idx }}.receber"
-                                                    style="width:60px;text-align:right;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;{{ $i['conferido'] ? '' : 'opacity:0.4;' }}">
+                                                <div style="display:flex;align-items:center;gap:2px;">
+                                                    <button wire:click="decrementar('receber',{{ $idx }})" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;line-height:1;">−</button>
+                                                    <input type="text" inputmode="decimal" wire:model="itens.{{ $idx }}.receber"
+                                                        style="width:46px;text-align:center;padding:2px 2px;border:1px solid var(--border);border-radius:4px;font-size:11px;{{ $i['conferido'] ? '' : 'opacity:0.4;' }}">
+                                                    <button wire:click="incrementar('receber',{{ $idx }})" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;line-height:1;">+</button>
+                                                </div>
                                             </td>
                                             <td class="data-table-td text-right">
-                                                <input type="text" inputmode="decimal" wire:model="itens.{{ $idx }}.avaria"
-                                                    style="width:50px;text-align:right;padding:2px 4px;border:1px solid var(--danger);border-radius:4px;font-size:11px;color:var(--danger);{{ $i['conferido'] ? '' : 'opacity:0.4;' }}">
+                                                <div style="display:flex;align-items:center;gap:2px;">
+                                                    <button wire:click="decrementar('avaria',{{ $idx }})" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--danger);background:#fff;cursor:pointer;font-size:12px;line-height:1;color:var(--danger);">−</button>
+                                                    <input type="text" inputmode="decimal" wire:model="itens.{{ $idx }}.avaria"
+                                                        style="width:36px;text-align:center;padding:2px 2px;border:1px solid var(--danger);border-radius:4px;font-size:11px;color:var(--danger);{{ $i['conferido'] ? '' : 'opacity:0.4;' }}">
+                                                    <button wire:click="incrementar('avaria',{{ $idx }})" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--danger);background:#fff;cursor:pointer;font-size:12px;line-height:1;color:var(--danger);">+</button>
+                                                </div>
+                                            </td>
+                                            <td class="data-table-td text-center">
+                                                <button wire:click="naoVeioToggle({{ $idx }})" style="width:28px;height:28px;border-radius:6px;border:1px solid {{ $i['nao_veio'] ? 'var(--warning)' : 'var(--border)' }};background:{{ $i['nao_veio'] ? 'color-mix(in srgb,var(--warning)12%,transparent)' : '#fff' }};cursor:pointer;font-size:14px;">
+                                                    {{ $i['nao_veio'] ? '🚫' : '✓' }}
+                                                </button>
                                             </td>
                                             <td class="data-table-td text-center">
                                                 <input type="text" wire:model="itens.{{ $idx }}.lote" placeholder="—"
@@ -156,8 +168,16 @@
                                         @endif
                                         <td class="data-table-td text-right text-muted">R$ {{ number_format($i['custo'], 2, ',', '.') }}</td>
                                     </tr>
+                                    @if ($i['nao_veio'] && in_array($p->status, ['enviado', 'parcialmente_recebido']))
+                                        <tr style="background:color-mix(in srgb,var(--warning)3%,transparent);">
+                                            <td colspan="2"></td>
+                                            <td colspan="8" style="padding:2px 8px 6px;">
+                                                <input type="text" wire:model="itens.{{ $idx }}.motivo" placeholder="Motivo do item não veio..." style="width:100%;padding:4px 8px;border:1px solid var(--warning);border-radius:4px;font-size:11px;">
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @empty
-                                    <tr><td colspan="10" class="data-table-empty">Nenhum item encontrado.</td></tr>
+                                    <tr><td colspan="12" class="data-table-empty">Nenhum item encontrado.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -166,10 +186,8 @@
 
                 @if (in_array($p->status, ['enviado', 'parcialmente_recebido']))
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                        <div style="font-size:11px;color:var(--muted);">
-                            <i class="fas fa-info-circle"></i>
-                            Apenas itens com <strong>checkbox marcado</strong> e quantidade > 0 serão recebidos.
-                            Avaria registra entrada como perda sem acrescentar ao estoque.
+                        <div style="font-size:11px;color:var(--muted);display:flex;gap:16px;">
+                            <span>☑ Conferido · 🚫 Não veio · <span style="color:var(--danger);">Avaria</span></span>
                         </div>
                         <button wire:click="confirmarRecebimento" class="btn btn-success" style="padding:10px 24px;font-size:13px;font-weight:800;border:0;border-radius:8px;color:#fff;cursor:pointer;">
                             <i class="fas fa-check-circle"></i> Confirmar Recebimento

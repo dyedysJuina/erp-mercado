@@ -40,9 +40,41 @@ class PedidoDetalheManager extends Component
             'conferido' => true,
             'receber' => max(0, (float)$i->quantidade_pedida - (float)$i->quantidade_recebida),
             'avaria' => 0,
+            'nao_veio' => false,
+            'motivo' => '',
             'lote' => '',
             'validade' => '',
         ])->toArray();
+    }
+
+    public function incrementar(string $campo, int $idx): void
+    {
+        if (!in_array($campo, ['receber', 'avaria'])) return;
+        if (isset($this->itens[$idx])) {
+            $pendente = max(0, $this->itens[$idx]['quantidade_pedida'] - $this->itens[$idx]['quantidade_recebida']);
+            if ($this->itens[$idx][$campo] < $pendente) {
+                $this->itens[$idx][$campo] = min($pendente, $this->itens[$idx][$campo] + 1);
+            }
+        }
+    }
+
+    public function decrementar(string $campo, int $idx): void
+    {
+        if (!in_array($campo, ['receber', 'avaria'])) return;
+        if (isset($this->itens[$idx]) && $this->itens[$idx][$campo] > 0) {
+            $this->itens[$idx][$campo] = max(0, $this->itens[$idx][$campo] - 1);
+        }
+    }
+
+    public function naoVeioToggle(int $idx): void
+    {
+        if (isset($this->itens[$idx])) {
+            $this->itens[$idx]['nao_veio'] = !$this->itens[$idx]['nao_veio'];
+            if ($this->itens[$idx]['nao_veio']) {
+                $this->itens[$idx]['receber'] = 0;
+                $this->itens[$idx]['conferido'] = true;
+            }
+        }
     }
 
     #[Computed]
