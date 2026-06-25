@@ -43,7 +43,7 @@ $overridesCss = app(\App\Services\ThemeService::class)->getAllOverridesCss();
             // Auto-expand section if a link inside is active
             @php $navRoutes = ['dashboard','categorias','atributos','unidades-medida','embalagens','marcas','produtos-base','variacoes','clientes']; @endphp
             if ({{ in_array(request()->route()?->getName(), $navRoutes) ? 'true' : 'false' }}) this.navOpen = true;
-            @php $operRoutes = ['fornecedores','compras','nfe-entrada','importador','sugestao-compras','pedidos-online','estoque','precos','precos.historico','etiquetas','ofertas','vitrine','lojas']; @endphp
+            @php $operRoutes = ['fornecedores','compras','nfe-entrada','importador','sugestao-compras','pedidos','pedidos-online','separacao','estoque','precos','precos.historico','etiquetas','ofertas','vitrine','lojas']; @endphp
             if ({{ in_array(request()->route()?->getName(), $operRoutes) ? 'true' : 'false' }}) this.operOpen = true;
             @php $finRoutes = ['vendas','financeiro','financeiro.conciliacao','fluxo-caixa','relatorios','curva-abc','dre','margem-departamento','usuarios','papeis','admin.gerencial','dashboard-executivo','admin.themes']; @endphp
             if ({{ in_array(request()->route()?->getName(), $finRoutes) ? 'true' : 'false' }}) this.finOpen = true;
@@ -89,6 +89,7 @@ $overridesCss = app(\App\Services\ThemeService::class)->getAllOverridesCss();
                 'fornecedores' => ['fa-truck', 'Fornecedores', 'fornecedores'],
                 'pedidos' => ['fa-shopping-bag', 'Pedidos Compra', 'pedidos'],
                 'pedidos-online' => ['fa-globe', 'Pedidos Online', 'pedidos'],
+                'separacao' => ['fa-box', 'Separacao', 'pedidos'],
                 'compras' => ['fa-lightbulb', 'Compras (Sugestão)', 'compras'],
                 'nfe-entrada' => ['fa-file-import', 'NF-e Entrada', 'compras'],
                 'estoque' => ['fa-warehouse', 'Estoque', 'estoque'],
