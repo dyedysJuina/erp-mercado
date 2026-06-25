@@ -51,42 +51,6 @@
     openModal(html) { this.modalHtml = html; this.showModal = true; },
     closeModal() { this.showModal = false; this.modalHtml = ''; },
 
-    abrirFalta(id) {
-        this.openModal(`
-            <h3 style='color:#ef4444;'><i class='fas fa-triangle-exclamation'></i> Registrar falta</h3>
-            <p style='font-weight:600;margin-bottom:12px;font-size:14px;'>Produto sem estoque?</p>
-            <div class='field'><label>Motivo</label><textarea id='motivoFalta' class='w-full'>Produto indispon\u00edvel no estoque.</textarea></div>
-            <div class='modal-actions'>
-                <button class='btn' style='background:#ef4444;color:#fff;' @click=\\\"closeModal();\\$wire.definirStatus('faltou');\\$wire.confirmarProximo();\\\"><i class='fas fa-check'></i> Confirmar falta</button>
-                <button class='btn' style='background:var(--background);color:var(--text);border:1px solid var(--border);' @click='closeModal()'>Cancelar</button>
-            </div>
-        `);
-    },
-    abrirQtd(id) {
-        this.openModal(`
-            <h3><i class='fas fa-scale-balanced' style='color:#f59e0b;'></i> Alterar quantidade</h3>
-            <div class='field'><label>Quantidade separada</label>
-                <input id='qtdSep' type='number' step='0.1' value=\\\"${$wire.itens[$wire.itemAtual]?.qtd_pedido || 1}\\\" />
-            </div>
-            <div class='modal-actions'>
-                <button class='btn' style='background:var(--sep-gradient);color:#fff;' @click='closeModal();\\$wire.confirmarProximo();'><i class='fas fa-check'></i> Confirmar</button>
-                <button class='btn' style='background:var(--background);color:var(--text);border:1px solid var(--border);' @click='closeModal()'>Cancelar</button>
-            </div>
-        `);
-    },
-    abrirObs(id) {
-        this.openModal(`
-            <h3><i class='fas fa-note-sticky' style='color:var(--muted);'></i> Observa\u00e7\u00e3o</h3>
-            <div class='field'><label>Observa\u00e7\u00e3o do separador</label>
-                <textarea id='obsSep'>\u0024{ $wire.itens[$wire.itemAtual]?.observacao || '' }</textarea>
-            </div>
-            <div class='modal-actions'>
-                <button class='btn' style='background:var(--warning);color:#fff;' @click='closeModal()'><i class='fas fa-check'></i> Salvar</button>
-                <button class='btn' style='background:var(--background);color:var(--text);border:1px solid var(--border);' @click='closeModal()'>Cancelar</button>
-            </div>
-        `);
-    },
-
     handleKey(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         if (e.key === 'Escape') { this.closeModal(); this.closeScanner(); return; }
