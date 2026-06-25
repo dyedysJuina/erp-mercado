@@ -86,11 +86,15 @@ class ClienteManager extends Component
 
     protected function rules(): array
     {
+        $uniqueWhatsapp = 'unique:clientes,whatsapp';
+        if ($this->editandoId) {
+            $uniqueWhatsapp .= ',' . $this->editandoId;
+        }
         return [
             'nome' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:150'],
             'cpf' => ['nullable', 'string', 'max:14'],
-            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'whatsapp' => ['nullable', 'string', 'max:30', $uniqueWhatsapp],
             'data_nascimento' => ['nullable', 'date'],
             'ativo' => ['boolean'],
             'aceita_marketing' => ['boolean'],
@@ -256,6 +260,11 @@ class ClienteManager extends Component
 
     public function salvar(): void
     {
+        // Sanitiza whatsapp antes de validar
+        if ($this->whatsapp) {
+            $this->whatsapp = preg_replace('/\D/', '', $this->whatsapp);
+        }
+
         $this->validate();
 
         $this->nome = ucwords(mb_strtolower(trim($this->nome)));
