@@ -27,6 +27,8 @@ class SeparacaoManager extends Component
     public string $buscaSubstituto = '';
     public array $resultadosSubstituto = [];
     public bool $showSubstituto = false;
+    public int $volumes = 1;
+    public bool $conferenciaAprovada = false;
 
     public function mount(int $id): void
     {
@@ -367,8 +369,15 @@ class SeparacaoManager extends Component
         $this->itemAtual++;
     }
 
+    public function abrirConferencia(): void
+    {
+        $this->conferenciaAprovada = false;
+    }
+
     public function finalizarSeparacao()
     {
+        if (!$this->conferenciaAprovada) return;
+
         DB::transaction(function () {
             for ($i = 0; $i < count($this->itens); $i++) {
                 $item = $this->itens[$i];

@@ -192,8 +192,34 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 4000) })"
                     </div>
                 </div>
 
-                <button wire:click="finalizarSeparacao" style="width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
-                    <i class="fas fa-check-double" style="margin-right:6px;"></i> Confirmar e Finalizar
+                {{-- VOLUMES + CONFERÊNCIA --}}
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <i class="fas fa-boxes" style="color:var(--muted);font-size:14px;"></i>
+                        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Volumes / Sacolas</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button wire:click="$set('volumes', max(1, volumes - 1))" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">−</button>
+                        <input type="number" wire:model="volumes" style="width:60px;height:32px;text-align:center;border:2px solid var(--warning);border-radius:8px;font-size:16px;font-weight:800;outline:none;">
+                        <button wire:click="$set('volumes', volumes + 1)" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;">+</button>
+                        <span style="font-size:11px;color:var(--muted);">saco(s)</span>
+                    </div>
+                </div>
+
+                @if (!$this->conferenciaAprovada)
+                    <button wire:click="abrirConferencia" style="width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
+                        <i class="fas fa-clipboard-check" style="margin-right:6px;"></i> Iniciar Conferência
+                    </button>
+                @else
+                    <div style="background:color-mix(in srgb,#22c55e,6%,transparent);border:1px solid #22c55e;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center;">
+                        <i class="fas fa-check-circle" style="color:#22c55e;font-size:24px;margin-bottom:4px;display:block;"></i>
+                        <span style="font-size:13px;font-weight:700;color:#22c55e;">Conferência aprovada</span>
+                        <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">{{ $prog['total'] }} itens · {{ $prog['separados'] }} OK · {{ $prog['faltou'] }} faltou · {{ $prog['altQtd'] }} qtd alt. · {{ $prog['substituidos'] }} subst.</p>
+                    </div>
+                    <button wire:click="finalizarSeparacao" style="width:100%;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
+                        <i class="fas fa-check-double" style="margin-right:6px;"></i> Confirmar e Finalizar ({{ $this->volumes }} {{ $this->volumes > 1 ? 'volumes' : 'volume' }})
+                    </button>
+                @endif
                 </button>
                 <a href="/separacao" wire:navigate style="display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--muted);text-decoration:none;padding:6px;">Voltar para lista</a>
             </div>
