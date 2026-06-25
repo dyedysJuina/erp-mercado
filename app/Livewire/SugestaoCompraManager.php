@@ -39,13 +39,13 @@ class SugestaoCompraManager extends Component
         $ultimos = CompraPedidoItem::with('pedido')
             ->where('produto_variacao_id', $variacaoId)
             ->whereHas('pedido', fn($q) => $q->where('status', '!=', 'cancelado'))
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->limit(8)
             ->get();
 
         $this->historicoDados = $ultimos->map(fn($i) => [
             'pedido_id' => $i->compra_pedido_id,
-            'data' => $i->created_at?->format('d/m/Y') ?? '—',
+            'data' => $i->pedido?->created_at?->format('d/m/Y') ?? '—',
             'quantidade' => (float)$i->quantidade_pedida,
             'preco' => (float)$i->custo_unitario,
         ])->toArray();
@@ -61,7 +61,7 @@ class SugestaoCompraManager extends Component
         foreach ($histPreco as $h) {
             $this->historicoDados[] = [
                 'pedido_id' => null,
-                'data' => $h->created_at ? date('d/m/Y', strtotime($h->created_at)) : '—',
+                'data' => $h->created_at ?? '—',
                 'quantidade' => 0,
                 'preco' => (float)$h->preco_novo,
             ];
