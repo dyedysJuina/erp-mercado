@@ -159,6 +159,9 @@ class SeparacaoManager extends Component
             'separados' => $separados, 'faltou' => $faltou,
             'substituidos' => $substituidos, 'altQtd' => $altQtd,
             'cancelados' => count($this->cancelados),
+            'pctOk' => $total > 0 ? round(($separados / $total) * 100) : 0,
+            'pctFaltou' => $total > 0 ? round(($faltou / $total) * 100) : 0,
+            'pctSubst' => $total > 0 ? round(($substituidos / $total) * 100) : 0,
         ];
     }
 
