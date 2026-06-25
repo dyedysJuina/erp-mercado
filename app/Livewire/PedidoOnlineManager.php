@@ -54,8 +54,10 @@ class PedidoOnlineManager extends Component
     #[Computed]
     public function totais(): array
     {
-        $q = Pedido::where('origem', 'site')
-            ->where('loja_id', auth()->user()->loja_id);
+        $q = Pedido::where('origem', 'site');
+        if ($lojaId = auth()->user()->loja_id) {
+            $q->where('loja_id', $lojaId);
+        }
         return [
             'hoje' => (clone $q)->whereDate('created_at', today())->count(),
             'novos' => (clone $q)->where('status', 'recebido')->count(),
@@ -75,9 +77,11 @@ class PedidoOnlineManager extends Component
 
     public function listagem()
     {
-        $q = Pedido::where('origem', 'site')
-            ->where('loja_id', auth()->user()->loja_id)
-            ->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
+        $q = Pedido::where('origem', 'site');
+        if ($lojaId = auth()->user()->loja_id) {
+            $q->where('loja_id', $lojaId);
+        }
+        $q->with(['cliente', 'itens.variacao', 'separador', 'entregador'])
             ->orderByRaw("FIELD(status, 'recebido','confirmado','em_separacao','pronto_retirada','pronto_entrega')")
             ->orderBy('created_at', 'desc');
 
