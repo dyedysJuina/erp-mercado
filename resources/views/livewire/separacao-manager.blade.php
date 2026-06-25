@@ -173,7 +173,7 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
             {{-- Imagem do produto --}}
             <div style="width:192px;height:192px;background:#fff;border-radius:16px;padding:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f3f4f6;margin-bottom:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 @if (!empty($item['foto']))
-                    <img src="{{ $item['foto'] }}" alt="Produto" style="max-height:100%;max-width:100%;object-contain:true;" onerror="this.style.display='none'">
+                    <img src="{{ $item['foto'] }}" alt="Produto" style="max-height:100%;max-width:100%;object-fit:contain;" onerror="this.style.display='none'">
                 @else
                     <i class="fas fa-box" style="font-size:64px;color:#d1d5db;"></i>
                 @endif
@@ -201,14 +201,14 @@ x-init="$watch('show', val => { if(val) setTimeout(() => show = false, 3500) })"
                 @endif
 
                 {{-- Qtd a pegar --}}
-                <div style="display:inline-flex;align-items:center;gap:12px;background:#1f2937;color:#fff;font-size:18px;font-weight:800;padding:8px 16px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.08);">
+                <div style="display:inline-flex;align-items:center;gap:10px;background:#1f2937;color:#fff;font-size:18px;font-weight:800;padding:8px 20px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.08);">
                     <span>Pegar:</span>
                     <div style="display:flex;align-items:center;gap:4px;">
-                        <button wire:click="decrementar" style="width:24px;height:24px;border-radius:4px;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;">−</button>
-                        <input type="number" wire:model.blur="itens.{{ $this->itemAtual }}.qtd_separada" style="width:36px;height:24px;text-align:center;border:none;background:transparent;color:var(--brand-500);font-size:18px;font-weight:900;outline:none;">
-                        <button wire:click="incrementar" style="width:24px;height:24px;border-radius:4px;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;">+</button>
+                        <button wire:click="decrementar" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:16px;font-weight:bold;display:flex;align-items:center;justify-content:center;">−</button>
+                        <input type="number" wire:model.blur="itens.{{ $this->itemAtual }}.qtd_separada" style="width:65px;height:30px;text-align:center;border:none;background:rgba(255,255,255,0.1);color:#10b981;border-radius:6px;font-size:20px;font-weight:900;outline:none;-moz-appearance:textfield;" onfocus="this.select()">
+                        <button wire:click="incrementar" style="width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:16px;font-weight:bold;display:flex;align-items:center;justify-content:center;">+</button>
                     </div>
-                    <span>/ {{ $item['qtd_pedido'] }} un</span>
+                    <span style="font-size:15px;opacity:0.8;">/ {{ $item['qtd_pedido'] }} un</span>
                 </div>
             </div>
 
