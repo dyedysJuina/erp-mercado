@@ -271,35 +271,76 @@
 
                         {{-- COMPRAS --}}
                         <div x-show="activeTab === 'compras'">
-                            <div class="section-border">Histórico de Compras</div>
                             @php $compras = $this->comprasCliente; @endphp
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                                <div class="sub-card">
-                                    <div class="section-title" style="margin-bottom:8px;">PDV (Balcão)</div>
-                                    @forelse ($compras['pdv'] as $v)
-                                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
-                                            <span style="font-weight:600;">#{{ $v['id'] }}</span>
-                                            <span style="color:var(--muted);">{{ \Carbon\Carbon::parse($v['created_at'])->format('d/m/Y') }}</span>
-                                            <span style="font-weight:700;">R$ {{ number_format($v['total'], 2, ',', '.') }}</span>
-                                            <span class="badge-sm {{ $v['status'] === 'concluida' ? 'badge-ativo' : 'badge-inativo' }}">{{ $v['status'] }}</span>
-                                        </div>
-                                    @empty
-                                        <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">Nenhuma venda.</div>
-                                    @endforelse
+                            {{-- INSIGHTS --}}
+                            @if (!empty($compras['insights']['frequencia']))
+                                <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+                                    <div style="flex:1;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--primary-600)6%,transparent);border:1px solid color-mix(in srgb,var(--primary-600)12%,transparent);">
+                                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);">Frequência</span>
+                                        <div style="font-size:22px;font-weight:900;color:var(--text);">{{ number_format($compras['insights']['frequencia'], 1, ',', '.') }}/mês</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,#f59e0b 6%,transparent);border:1px solid color-mix(in srgb,#f59e0b 12%,transparent);">
+                                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);">Dia Preferido</span>
+                                        <div style="font-size:22px;font-weight:900;color:var(--text);">{{ $compras['insights']['dia_preferido'] }}</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--success)6%,transparent);border:1px solid color-mix(in srgb,var(--success)12%,transparent);">
+                                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);">Mais Comprado</span>
+                                        <div style="font-size:16px;font-weight:900;color:var(--text);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $compras['insights']['produto_top'] }}</div>
+                                    </div>
+                                    <div style="flex:1;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,#6366f1 6%,transparent);border:1px solid color-mix(in srgb,#6366f1 12%,transparent);">
+                                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);">Total Compras</span>
+                                        <div style="font-size:22px;font-weight:900;color:var(--text);">{{ $compras['insights']['total_compras'] }}</div>
+                                    </div>
                                 </div>
-                                <div class="sub-card">
-                                    <div class="section-title" style="margin-bottom:8px;">Delivery</div>
-                                    @forelse ($compras['pedidos'] as $p)
-                                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
-                                            <span style="font-weight:600;">{{ $p['codigo'] }}</span>
-                                            <span style="color:var(--muted);">{{ \Carbon\Carbon::parse($p['created_at'])->format('d/m/Y') }}</span>
-                                            <span style="font-weight:700;">R$ {{ number_format($p['total'], 2, ',', '.') }}</span>
-                                            <span class="badge-sm {{ $p['status'] === 'entregue' ? 'badge-ativo' : 'badge-warning' }}">{{ $p['status'] }}</span>
+                                @if (!empty($compras['insights']['produtos_frequentes']))
+                                    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;gap:10px;">
+                                        <span><i class="fas fa-fire" style="color:var(--warning);"></i> Mais frequentes:</span>
+                                        @foreach ($compras['insights']['produtos_frequentes'] as $prod => $qtd)
+                                            <span style="background:color-mix(in srgb,var(--text)6%,transparent);padding:2px 8px;border-radius:4px;"><strong style="color:var(--text);text-transform:uppercase;">{{ $prod }}</strong> ({{ number_format($qtd, 0, ',', '.') }}x)</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            @endif
+
+                            <div class="section-border">Timeline de Compras</div>
+                            <div class="sub-card">
+                                @forelse ($compras['timeline'] as $c)
+                                    <div style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid color-mix(in srgb,var(--text)6%,transparent);font-size:12px;">
+                                        <span style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;{{ $c['tipo'] === 'pdv' ? 'background:color-mix(in srgb,var(--success)10%,transparent);color:var(--success);' : 'background:color-mix(in srgb,#6366f1 10%,transparent);color:#6366f1;' }}">
+                                            <i class="fas {{ $c['tipo'] === 'pdv' ? 'fa-shopping-cart' : 'fa-globe' }}"></i>
+                                        </span>
+                                        <div style="flex:1;">
+                                            @if ($c['tipo'] === 'pdv')
+                                                <a href="{{ $c['link'] }}" wire:navigate style="font-weight:700;color:var(--text);text-decoration:none;">Venda #{{ $c['id'] }}</a>
+                                            @else
+                                                <a href="{{ $c['link'] }}" wire:navigate style="font-weight:700;color:var(--text);text-decoration:none;">{{ $c['codigo'] ?? 'Pedido #' . $c['id'] }}</a>
+                                            @endif
+                                            <span style="color:var(--muted);font-size:11px;margin-left:6px;">{{ $c['data_fmt'] }}</span>
+                                            @if (!empty($c['itens']))
+                                                <div style="font-size:10px;color:var(--muted);margin-top:2px;">
+                                                    @foreach ($c['itens'] as $ii => $item)
+                                                        <span style="text-transform:uppercase;">{{ $item['nome'] }}</span>@if ($ii < count($c['itens']) - 1), @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
-                                    @empty
-                                        <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">Nenhum pedido.</div>
-                                    @endforelse
-                                </div>
+                                        <div style="text-align:right;">
+                                            <span style="font-weight:800;font-size:13px;">R$ {{ number_format($c['total'], 2, ',', '.') }}</span>
+                                            <div>
+                                                @if ($c['tipo'] === 'pdv')
+                                                    <span class="badge-sm {{ $c['status'] === 'concluida' ? 'badge-ativo' : 'badge-inativo' }}" style="font-size:8px;">{{ $c['status'] }}</span>
+                                                @else
+                                                    <span class="badge-sm {{ $c['status'] === 'entregue' || $c['status'] === 'recebido' ? 'badge-ativo' : 'badge-warning' }}" style="font-size:8px;">{{ $c['status'] }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">
+                                        <i class="fas fa-box-open" style="font-size:28px;margin-bottom:8px;opacity:0.3;display:block;"></i>
+                                        Nenhuma compra encontrada.
+                                    </div>
+                                @endforelse
                             </div>
                         </div>
 

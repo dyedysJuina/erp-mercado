@@ -220,12 +220,99 @@ class ClienteManager extends Component
     #[Computed]
     public function comprasCliente(): array
     {
-        if (!$this->editandoId) return ['pdv' => [], 'pedidos' => []];
+        if (!$this->editandoId) return ['timeline' => [], 'insights' => []];
+
         $pdv = \App\Models\PdvVenda::where('cliente_id', $this->editandoId)
-            ->with('pagamentos')->orderBy('created_at', 'desc')->limit(20)->get()->toArray();
+            ->with(['itens.variacao', 'pagamentos'])
+            ->orderBy('created_at', 'desc')->limit(30)->get();
+
         $pedidos = \App\Models\Pedido::where('cliente_id', $this->editandoId)
-            ->orderBy('created_at', 'desc')->limit(20)->get()->toArray();
-        return ['pdv' => $pdv, 'pedidos' => $pedidos];
+            ->with('itens.variacao')
+            ->orderBy('created_at', 'desc')->limit(30)->get();
+
+        $timeline = [];
+
+        foreach ($pdv as $v) {
+            $topItens = $v->itens->sortByDesc('quantidade')->take(3)->map(fn($i) => [
+                'nome' => $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}",
+                'qtd' => (float)$i->quantidade,
+            ])->toArray();
+
+            $timeline[] = [
+                'tipo' => 'pdv',
+                'id' => $v->id,
+                'data' => $v->created_at,
+                'data_fmt' => $v->created_at->format('d/m/Y H:i'),
+                'total' => (float)$v->total,
+                'status' => $v->status,
+                'itens' => $topItens,
+                'link' => '/vendas',
+                'pagamentos' => $v->pagamentos->pluck('forma_pagamento_id')->toArray(),
+            ];
+        }
+
+        foreach ($pedidos as $p) {
+            $topItens = $p->itens->sortByDesc('quantidade_solicitada')->take(3)->map(fn($i) => [
+                'nome' => $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}",
+                'qtd' => (float)$i->quantidade_solicitada,
+            ])->toArray();
+
+            $timeline[] = [
+                'tipo' => 'pedido',
+                'id' => $p->id,
+                'codigo' => $p->codigo,
+                'data' => $p->created_at,
+                'data_fmt' => $p->created_at->format('d/m/Y H:i'),
+                'total' => (float)$p->total,
+                'status' => $p->status,
+                'itens' => $topItens,
+                'link' => '/pedidos-online',
+                'pagamentos' => [],
+            ];
+        }
+
+        usort($timeline, fn($a, $b) => $b['data']->timestamp - $a['data']->timestamp);
+        $timeline = array_slice($timeline, 0, 50);
+
+        // Insights
+        $todasDatas = collect($timeline)->pluck('data')->sort();
+        $diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        $diasContagem = array_fill(0, 7, 0);
+        $produtosContagem = [];
+
+        foreach ($pdv as $v) {
+            $diasContagem[$v->created_at->dayOfWeek]++;
+            foreach ($v->itens as $i) {
+                $nome = $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}";
+                $produtosContagem[$nome] = ($produtosContagem[$nome] ?? 0) + (float)$i->quantidade;
+            }
+        }
+        foreach ($pedidos as $p) {
+            $diasContagem[$p->created_at->dayOfWeek]++;
+            foreach ($p->itens as $i) {
+                $nome = $i->variacao?->nome_completo ?? "#{$i->produto_variacao_id}";
+                $produtosContagem[$nome] = ($produtosContagem[$nome] ?? 0) + (float)($i->quantidade_solicitada ?? 1);
+            }
+        }
+
+        arsort($produtosContagem);
+        $topProdutos = array_slice($produtosContagem, 0, 5, true);
+        $diaPreferido = array_search(max($diasContagem), $diasContagem);
+        $totalCompras = count($timeline);
+        $primeiraData = $todasDatas->first();
+        $ultimaData = $todasDatas->last();
+        $diasAtivo = $primeiraData ? max(1, $primeiraData->diffInDays($ultimaData ?? now())) : 1;
+        $frequencia = $diasAtivo > 0 && $totalCompras > 0 ? round($totalCompras / max(1, $diasAtivo / 30), 1) : 0;
+
+        $insights = [
+            'frequencia' => $frequencia,
+            'dia_preferido' => $diasSemana[$diaPreferido] ?? '—',
+            'produto_top' => $topProdutos ? key($topProdutos) : '—',
+            'total_compras' => $totalCompras,
+            'produtos_frequentes' => array_slice($topProdutos, 0, 3, true),
+        ];
+
+        return ['timeline' => $timeline, 'insights' => $insights];
     }
 
     #[Computed]
