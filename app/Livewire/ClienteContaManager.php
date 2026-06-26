@@ -160,12 +160,12 @@ class ClienteContaManager extends Component
             'senha_confirmacao' => ['required', 'same:senha_nova'],
         ]);
 
-        if (!Hash::check($this->senha_atual, $c->password ?? '')) {
+        if (!Hash::check($this->senha_atual, $c->user?->password ?? '')) {
             $this->addError('senha_atual', 'Senha atual incorreta.');
             return;
         }
 
-        $c->update(['password' => Hash::make($this->senha_nova)]);
+        $c->user?->update(['password' => Hash::make($this->senha_nova)]);
         $this->senha_atual = '';
         $this->senha_nova = '';
         $this->senha_confirmacao = '';

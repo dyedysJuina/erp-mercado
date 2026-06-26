@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\User;
 use App\Models\Cliente;
 use Livewire\Component;
 use Illuminate\Support\Facades\Hash;
@@ -16,11 +17,9 @@ class VitrineAuth extends Component
         $this->aba = request()->query('aba', 'login');
     }
 
-    // Login fields
     public string $login_email = '';
     public string $login_password = '';
 
-    // Register fields
     public string $reg_nome = '';
     public string $reg_email = '';
     public string $reg_whatsapp = '';
@@ -37,8 +36,8 @@ class VitrineAuth extends Component
         }
         return [
             'reg_nome' => ['required', 'string', 'min:2', 'max:150'],
-            'reg_email' => ['required', 'email', 'max:150', 'unique:clientes,email'],
-            'reg_whatsapp' => ['required', 'string', 'max:20', 'unique:clientes,whatsapp'],
+            'reg_email' => ['required', 'email', 'max:150', 'unique:users,email'],
+            'reg_whatsapp' => ['required', 'string', 'max:20', 'unique:users,whatsapp'],
             'reg_password' => ['required', 'string', 'min:6'],
             'reg_password_confirmation' => ['required', 'same:reg_password'],
         ];
@@ -72,18 +71,18 @@ class VitrineAuth extends Component
         $this->aba = 'login';
         $this->validate();
 
-        $cliente = Cliente::where('email', $this->login_email)->first();
+        $user = User::where('email', $this->login_email)->where('ativo', true)->first();
 
-        if (!$cliente || !$cliente->ativo || !Hash::check($this->login_password, $cliente->password ?? '')) {
+        if (!$user || !Hash::check($this->login_password, $user->password)) {
             $this->addError('login_email', 'E-mail ou senha incorretos.');
             return;
         }
 
-        $cliente->update(['ultimo_login_at' => now()]);
+        $cliente = Cliente::where('user_id', $user->id)->first();
 
         session([
-            'cliente_id' => $cliente->id,
-            'cliente_nome' => $cliente->nome,
+            'cliente_id' => $cliente?->id,
+            'cliente_nome' => $cliente?->nome ?? $user->name,
         ]);
 
         return $this->redirect('/vitrine', navigate: true);
@@ -94,11 +93,19 @@ class VitrineAuth extends Component
         $this->aba = 'register';
         $this->validate();
 
-        $cliente = Cliente::create([
-            'nome' => $this->reg_nome,
+        $user = User::create([
+            'name' => $this->reg_nome,
             'email' => $this->reg_email,
             'whatsapp' => $this->reg_whatsapp,
             'password' => $this->reg_password,
+            'ativo' => true,
+        ]);
+
+        $cliente = Cliente::create([
+            'user_id' => $user->id,
+            'nome' => $this->reg_nome,
+            'email' => $this->reg_email,
+            'whatsapp' => $this->reg_whatsapp,
             'ativo' => true,
         ]);
 

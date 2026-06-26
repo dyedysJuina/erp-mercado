@@ -20,7 +20,6 @@ class Cliente extends Model
             'aceita_marketing' => 'boolean',
             'data_nascimento' => 'date',
             'deleted_at' => 'datetime',
-            'password' => 'hashed',
         ];
     }
 
@@ -57,5 +56,10 @@ class Cliente extends Model
     public function pontosMovimentacoes()
     {
         return $this->hasMany(CrmPontosMovimentacao::class, 'cliente_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
