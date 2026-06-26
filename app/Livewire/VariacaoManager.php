@@ -175,7 +175,7 @@ class VariacaoManager extends Component
     // ═══════════════════════════════════════════════════
 
     #[Computed]
-    public function optsMarcas(): array { return Marca::where('ativo',true)->orderBy('nome')->get(['id','nome'])->toArray(); }
+    public function getOptsMarcasProperty(): array { return Marca::where('ativo',true)->orderBy('nome')->get(['id','nome'])->toArray(); }
     #[Computed]
     public function optsEmbalagens(): array { return Embalagem::where('ativo',true)->orderBy('nome')->get(['id','nome','sigla'])->toArray(); }
     #[Computed]
@@ -262,7 +262,7 @@ class VariacaoManager extends Component
         $p = $this->produtoBase; if (!$p) return '';
         $parts = [$p['nome']];
         if ($this->marca_id) {
-            $m = collect($this->optsMarcas)->firstWhere('id', (int)$this->marca_id);
+            $m = collect($this->opts_marcas)->firstWhere('id', (int)$this->marca_id);
             if ($m) $parts[] = $m['nome'];
         }
         if ($this->conteudo_quantidade && $this->conteudo_quantidade !== '0') {

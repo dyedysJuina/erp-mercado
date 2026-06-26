@@ -123,7 +123,7 @@
                             <div class="section-border">Dados Cadastrais</div>
                             <div class="grid-2" style="margin-bottom:14px;">
                                 <div class="field"><label>SKU (Código Interno)</label><input wire:model="sku" placeholder="Ex: ARROZ-PAR-1KG" style="font-family:monospace;">@error('sku')<div class="err">{{ $message }}</div>@enderror</div>
-                                <div class="field" style="position:relative;" x-data="{ searchMarca: '', openMarca: false, marcasOpts: [], async loadMarcas() { this.marcasOpts = await this.$wire.optsMarcas(); } }">
+                                <div class="field" style="position:relative;" x-data="{ searchMarca: '', openMarca: false, marcasOpts: [], async loadMarcas() { this.marcasOpts = await this.$wire.opts_marcas; } }">
                                     <label>Marca</label>
                                     <input x-model="searchMarca" @focus="loadMarcas(); openMarca = true;" @keydown.escape="openMarca = false" placeholder="Digite para buscar..." @click.outside="openMarca = false">
                                     <div x-show="openMarca && marcasOpts.length > 0" x-cloak class="marca-dropdown">
